@@ -1,0 +1,19 @@
+[project]
+name = "src"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Hannan Ali",email = "hannanafc18@gmail.com"},
+    {name = "Matthew Potter",email = "matthewpotter315@gmail.com"},
+    {name = "Adam Driscoll",email = "adamdriscoll2005@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "pandas (>=3.0.0,<4.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

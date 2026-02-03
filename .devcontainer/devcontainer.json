@@ -15,7 +15,17 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "pip3 install poetry && poetry install && pnpm install tailwindcss @tailwindcss/cli"
+	"postCreateCommand": "pip3 install poetry && poetry install && pnpm install tailwindcss @tailwindcss/cli",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"mechatroner.rainbow-csv",
+				"bradlc.vscode-tailwindcss",
+				"stivo.tailwind-fold",
+				"ritwickdey.LiveServer"
+			]
+		}
+	}
 
 	// Configure tool-specific properties.
 	// "customizations": {},

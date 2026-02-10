@@ -1,59 +1,71 @@
-import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.neighbors import NearestNeighbors
+import warnings
 
 
-def load_data():
-    df = pd.read_csv('ratings.csv')   # userId, movieId, rating, timestamp
-    movie_titles = pd.read_csv('movies.csv')  # movieId, title, genres
+class CollaborativeRecommendationSystem():
 
-    data = pd.merge(df, movie_titles, on='movieId')
-    return data
+    def __init__(self, movies: pd.DataFrame, ratings: pd.DataFrame):
+        self.movies = movies
+        self.ratings = ratings
+        self.df = None
+        self.movie_user_matrix = None
+        self.knn = NearestNeighbors(
+            metric="cosine",
+            algorithm="brute"
+        )
 
-data = load_data()
+    def __prepare(self):
+        self.movie_user_matrix = self.ratings.pivot_table(
+            index="movieId",
+            columns="userId",
+            values="rating",
+            fill_value=0
+        )
 
-user_movie_matrix = data.pivot_table(
-    index='userId',
-    columns='title',
-    values='rating'
-)
-user_movie_matrix_filled = user_movie_matrix.fillna(0)
-knn = NearestNeighbors(
-    metric='cosine',
-    algorithm='brute'
-)
+        self.movie_user_matrix = self.movie_user_matrix.fillna(0)
+    
+    def get_similar_movies(self, movie_id, n=10):
 
-knn.fit(user_movie_matrix_filled)
-#similar users to ID 1
-user_id = 1
+        if (type(self.movie_user_matrix) == pd.DataFrame):
+            movie_idx = self.movie_user_matrix.index.get_loc(movie_id)
 
-user_vector = user_movie_matrix_filled.loc[user_id].values.reshape(1, -1)
+            distances, indices = self.knn.kneighbors(
+                self.movie_user_matrix.iloc[movie_idx].to_numpy().reshape(1, -1),
+                n_neighbors=n + 1
+            )
 
-distances, indices = knn.kneighbors(
-    user_vector,
-    n_neighbors=6  # user + 5 nearest neighbors
-)
-similar_users = user_movie_matrix_filled.index[indices.flatten()]
-similar_users
-def recommend_movies(user_id, n_recommendations=5):
-    user_vector = user_movie_matrix_filled.loc[user_id].values.reshape(1, -1)
-    distances, indices = knn.kneighbors(user_vector, n_neighbors=6)
+            similar_movies = []
 
-    similar_users = user_movie_matrix_filled.index[indices.flatten()[1:]]  # skip self
+            for i in range(1, len(indices[0])):
+                similar_movie_id = self.movie_user_matrix.index[indices[0][i]]
+                similarity = 1 - distances[0][i]
+                similar_movies.append((similar_movie_id, similarity))
 
-    # Average ratings from similar users
-    similar_users_ratings = user_movie_matrix.loc[similar_users]
-    mean_ratings = similar_users_ratings.mean()
+            return similar_movies
+        else:
+            warnings.warn( "Warning - movie matrix was not a dataframe, no similar movies found." )
+            return []
 
-    # Movies the user hasn’t rated
-    user_rated_movies = user_movie_matrix.loc[user_id]
-    unrated_movies = user_rated_movies[user_rated_movies.isna()]
+    def initialise(self):
+        self.__prepare()
+        if (type( self.movie_user_matrix ) == pd.DataFrame):
+            self.knn.fit( self.movie_user_matrix )
+        else:
+            warnings.warn( "Warning - movie matrix was not a dataframe, initialisation failed." )
+        
+    def recommend(self, user_id:int, recs_per_rating=3):
+        current_user_ratings = self.ratings[self.ratings.userId == user_id]
+        recommendations = []
 
-    recommendations = mean_ratings[unrated_movies.index]
-    recommendations = recommendations.sort_values(ascending=False)
+        for index, row in current_user_ratings.iterrows():
+            if row.rating >= 4.0:
+                similar_movies = self.get_similar_movies(row.movieId, n=recs_per_rating)
 
-    return recommendations.head(n_recommendations)
+                for movie in similar_movies:
+                    if movie[0] not in current_user_ratings.movieId.values:
+                        recommendations.append( { "movieId": movie[0], "similarity": movie[1] } )
 
-recommend_movies(user_id=1)
+        recommendations.sort( key=lambda x: x["similarity"], reverse=True )
+
+        return recommendations

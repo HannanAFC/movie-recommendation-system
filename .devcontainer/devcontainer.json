@@ -22,7 +22,8 @@
 				"mechatroner.rainbow-csv",
 				"bradlc.vscode-tailwindcss",
 				"stivo.tailwind-fold",
-				"ritwickdey.LiveServer"
+				"ritwickdey.LiveServer",
+				"ReprEng.csv"
 			]
 		}
 	}

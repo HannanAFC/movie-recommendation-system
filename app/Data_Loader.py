@@ -69,3 +69,15 @@ class CollaborativeRecommendationSystem():
         recommendations.sort( key=lambda x: x["similarity"], reverse=True )
 
         return recommendations
+    
+def extract_year(movies: pd.DataFrame, file_path: str):
+    
+    #Extract year from string
+    movies['year'] = movies['title'].str.extract(r'\((\d{4})\)')
+    movies['title'] = movies['title'].str.replace(r'\(\d{4}\)', '', regex=True)
+    
+    #Place extracted year into new column
+    
+    movies.to_csv(file_path, index=False)
+    
+    

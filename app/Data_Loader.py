@@ -5,7 +5,6 @@ from sklearn.preprocessing import MultiLabelBinarizer
 import warnings
 import numpy as np
 
-
 class CollaborativeRecommendationSystem():
 
     def __init__(self, movies: pd.DataFrame, ratings: pd.DataFrame):

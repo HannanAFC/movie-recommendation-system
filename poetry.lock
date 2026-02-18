@@ -445,6 +445,17 @@ timezone = ["pytz (>=2024.2)"]
 xml = ["lxml (>=5.3.0)"]
 
 [[package]]
+name = "progressbar"
+version = "2.5"
+description = "Text progress bar library for Python."
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "progressbar-2.5.tar.gz", hash = "sha256:5d81cb529da2e223b53962afd6c8ca0f05c6670e40309a7219eacc36af9b6c63"},
+]
+
+[[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
 description = "Extensions to the standard Python datetime module"
@@ -658,4 +669,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14"
-content-hash = "94c4c309ccd3430d4b728a4ddbf85d7e5c72ab2ce05f5970dfc82fe44e5f81dd"
+content-hash = "14746ec721766148534c22b0fa05bf80ac2138494ddc6e2ee300cb39790ef5b5"

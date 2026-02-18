@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = [
     {name = "Hannan Ali",email = "hannanafc18@gmail.com"},
-    {name = "Matthew Potter",email = "matthewpotter315@gmail.com"},
+    {name = "Matthew Potter",email = "matthewpotter154@gmail.com"},
     {name = "Adam Driscoll",email = "adamdriscoll2005@gmail.com"}
 ]
 readme = "README.md"
@@ -13,7 +13,8 @@ dependencies = [
     "pandas (>=3.0.0,<4.0.0)",
     "flask (>=3.1.2,<4.0.0)",
     "scikit-learn (>=1.8.0,<2.0.0)",
-    "matplotlib (>=3.10.8,<4.0.0)"
+    "line-profiler (>=5.0.1,<6.0.0)",
+    "progressbar (>=2.5,<3.0)",
 ]
 
 

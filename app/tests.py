@@ -1,4 +1,4 @@
-from Data_Loader import CollaborativeRecommendationSystem, ContentRecommendationSystem, extract_year
+from Data_Loader import CollaborativeRecommendationSystem, ContentRecommendationSystem, HybridRecommendationSystem, extract_year
 import pandas as pd
 from line_profiler import LineProfiler
 from urllib.request import urlretrieve
@@ -99,5 +99,14 @@ def extraction_test(movies):
 #standard_content_recommendation_test()
 #standard_collaborative_recommendation_test()
 
-movies, ratings, links, tags, extracted_year = datasets_initialisation("https://files.grouplens.org/datasets/movielens/ml-32m.zip")
-#movies, ratings, links, tags, extracted_year = datasets_initialisation("https://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
+#movies, ratings, links, tags, extracted_year = datasets_initialisation("https://files.grouplens.org/datasets/movielens/ml-32m.zip")
+movies, ratings, links, tags, extracted_year = datasets_initialisation("https://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
+
+def hybrid_test(movies, ratings):
+    hybrid = HybridRecommendationSystem(movies, ratings,
+                                         collab_weight=0.7,
+                                         content_weight=0.3)
+    results = hybrid.recommend(1, top_n=10)
+    print(results)
+
+hybrid_test(movies, ratings)

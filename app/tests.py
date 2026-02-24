@@ -1,4 +1,6 @@
-from Data_Loader import CollaborativeRecommendationSystem, ContentRecommendationSystem, extract_year
+from Data_Loader import *
+from manager import *
+from database import *
 import pandas as pd
 from line_profiler import LineProfiler
 from urllib.request import urlretrieve
@@ -96,8 +98,21 @@ def standard_content_recommendation_test(movies, ratings):
 def extraction_test(movies):
     extract_year(movies, extracted_year_path)
 
-#standard_content_recommendation_test()
-#standard_collaborative_recommendation_test()
+#movies, ratings, links, tags, extracted_year = datasets_initialisation("https://files.grouplens.org/datasets/movielens/ml-32m.zip")
+movies, ratings, links, tags, extracted_year = datasets_initialisation("https://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
 
-movies, ratings, links, tags, extracted_year = datasets_initialisation("https://files.grouplens.org/datasets/movielens/ml-32m.zip")
-#movies, ratings, links, tags, extracted_year = datasets_initialisation("https://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
+#standard_content_recommendation_test(movies, ratings)
+#standard_collaborative_recommendation_test(movies, ratings)
+
+def create_user_test( ):
+    init_db()
+    register_user( "test", "test" )
+    user, key = login_user( "test", "test" )
+    if ( user != None and key != None ):
+        print( f"User creation test passed\nUser: {user.username}\nKey: {key}" )
+        remove_user(User=user)
+        print("User deleted")
+    else:
+        print( "User creation test failed" )
+
+create_user_test()

@@ -24,11 +24,25 @@ def login_user(username, password):
         return user, key
     return None, None
 
+def remove_user(User):
+    session = Session()
+    user_db_session = session.object_session(User)
+    if user_db_session != None:
+        user_db_session.delete(User)
+        user_db_session.commit()
+        user_db_session.close()
+    else:
+        print("Can't find user session.")
+
 def add_movie_rating(user, key, movie_id, rating_value):
     session = Session()
-    encrypted_val = encrypt_rating(str(rating_value), key)
-    new_rating = MovieRating(user_id=user.id, movie_id=movie_id, encrypted_rating=encrypted_val)
-    session.add(new_rating)
-    session.commit()
-    session.close()
-    print(f"🔐 Rating for movie {movie_id} saved (Encrypted).")
+    user_db_session = session.object_session(User)
+    if user_db_session != None:
+        encrypted_val = encrypt_rating(str(rating_value), key)
+        new_rating = MovieRating(user_id=user.id, movie_id=movie_id, encrypted_rating=encrypted_val)
+        user_db_session.add(new_rating)
+        user_db_session.commit()
+        user_db_session.close()
+        print(f"🔐 Rating for movie {movie_id} saved (Encrypted).")
+    else:
+        print("Can't find user session.")

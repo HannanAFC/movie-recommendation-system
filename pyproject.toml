@@ -1,5 +1,5 @@
 [project]
-name = "app"
+name = "movie-recommendation-system"
 version = "0.1.0"
 description = ""
 authors = [
@@ -18,9 +18,13 @@ dependencies = [
     "sqlalchemy (>=2.0.46,<3.0.0)",
     "passlib[argon2] (>=1.7.4,<2.0.0)",
     "cryptography (>=46.0.5,<47.0.0)",
+    "flask-login (>=0.6.3,<0.7.0)",
+    "dotenv (>=0.9.9,<0.10.0)",
 ]
-
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false

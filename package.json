@@ -1,6 +1,22 @@
 {
+	"name": "movie-recommendation-system",
+	"version": "1.0.0",
+	"description": "A simple movie recommendation system written in Python with a Web GUI",
+	"author": {
+		"name": "Hannan Ali",
+		"email": "hannanafc18@gmail.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/HannanAFC/movie-recommendation-system.git"
+	},
 	"dependencies": {
-		"tailwindcss": "^4.1.18",
-		"@tailwindcss/cli": "^4.1.18"
-	}
+		"@tailwindcss/cli": "^4.2.1",
+		"tailwindcss": "^4.2.1"
+	},
+	"scripts": {
+		"tailwind": "npx @tailwindcss/cli -i ./app/static/css/input.css -o ./app/static/css/output.css --watch",
+		"prettier": "npx prettier --write **/*.html"
+	},
+	"homepage": "https://github.com/HannanAFC/movie-recommendation-system"
 }

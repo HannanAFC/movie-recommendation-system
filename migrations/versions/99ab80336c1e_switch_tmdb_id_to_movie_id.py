@@ -1,8 +1,8 @@
-"""Change tmdb_id to movie_id
+"""Switch tmdb_id to movie_id
 
-Revision ID: 005a9b143a34
+Revision ID: 99ab80336c1e
 Revises: 98cef91cd611
-Create Date: 2026-03-03 09:00:00.006115
+Create Date: 2026-03-03 14:46:45.308639
 
 """
 from alembic import op
@@ -11,7 +11,7 @@ from app.models import Encrypted, encryption_key
 
 
 # revision identifiers, used by Alembic.
-revision = '005a9b143a34'
+revision = '99ab80336c1e'
 down_revision = '98cef91cd611'
 branch_labels = None
 depends_on = None

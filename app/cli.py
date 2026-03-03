@@ -3,7 +3,6 @@ from flask import Blueprint
 import click
 from app import db
 from app.models import User, MovieRating
-from config import Config
 from random import randrange
 
 bp = Blueprint("cli", __name__, cli_group=None)

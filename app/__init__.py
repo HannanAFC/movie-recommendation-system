@@ -5,12 +5,14 @@ from flask_login import LoginManager
 from flask_mail import Mail
 from config import Config
 import os
+from flask_wtf.csrf import CSRFProtect
 
 db = SQLAlchemy()
 migrate = Migrate()
 login = LoginManager()
 login.login_message = "Login required to access this page."
 mail = Mail()
+csrf = CSRFProtect()
 
 def create_app(config_class=Config):
     # Initialise flask and get the settings from the config class
@@ -22,9 +24,10 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
     login.init_app(app)
     mail.init_app(app)
+    csrf.init_app(app)
 
     from app.auth import bp as auth_bp
-    app.register_blueprint(auth_bp)
+    app.register_blueprint(auth_bp, url_prefix="/auth")
 
     from app.errors import bp as errors_bp
     app.register_blueprint(errors_bp)

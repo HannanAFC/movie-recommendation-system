@@ -23,7 +23,9 @@
 				"bradlc.vscode-tailwindcss",
 				"stivo.tailwind-fold",
 				"ritwickdey.LiveServer",
-				"ReprEng.csv"
+				"ReprEng.csv",
+				"noxiz.jinja-snippets",
+				"wholroyd.jinja"
 			]
 		}
 	},

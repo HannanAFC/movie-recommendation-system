@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+    <form action="" method="post" class="flex flex-col max-w-100 mx-auto gap-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <label for="username">Username</label>
+        <input class="border-black border-2 rounded-sm" type="text", name="username" id="username" required>
+        <label for="email">Email</label>
+        <input class="border-black border-2 rounded-sm" type="email" name="email" id="email" required>
+        <label for="password">Password</label>
+        <input class="border-black border-2 rounded-sm" type="password" name="password" id="password">
+        <label for="repeat_password">Repeat Password</label>
+        <input class="border-black border-2 rounded-sm" type="password" name="repeat_password" id="repeat_password">
+        <button class="cursor-pointer border-2 border-black p-2 rounded-sm">Register</button>
+    </form>
+{% endblock %}

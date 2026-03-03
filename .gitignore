@@ -216,4 +216,4 @@ app/datasets/*
 
 .flaskenv
 
-.db
+*.db

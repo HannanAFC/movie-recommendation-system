@@ -4,11 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Movie Recommender</title>
-    <link rel="stylesheet" href="../static/dist/output.css">
+    <link rel="stylesheet" href="../static/css/output.css">
 </head>
 <body>
     <h1 class="text-5xl font-bold underline">
-        Hello world!
+        {% if current_user.is_authenticated %}
+            Hello {{ current_user.username }}
+        {% else %}
+            Hello world!
+        {% endif %}
     </h1>
 </body>
 </html>

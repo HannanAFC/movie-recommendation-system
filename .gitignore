@@ -215,3 +215,5 @@ node_modules/
 app/datasets/*
 
 .flaskenv
+
+.db

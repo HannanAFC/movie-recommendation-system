@@ -96,8 +96,16 @@ def standard_content_recommendation_test(movies, ratings):
 def extraction_test(movies):
     extract_year(movies, extracted_year_path)
 
+def hybrid_test(movies, ratings):
+    hybrid = HybridRecommendationSystem(movies, ratings,
+                                         collab_weight=0.7,
+                                         content_weight=0.3)
+    results = hybrid.recommend(1, top_n=10)
+    print(results)
+
+#standard_content_recommendation_test()
+#standard_collaborative_recommendation_test()
+
 #movies, ratings, links, tags, extracted_year = datasets_initialisation("https://files.grouplens.org/datasets/movielens/ml-32m.zip")
 movies, ratings, links, tags, extracted_year = datasets_initialisation("https://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
-
-#standard_content_recommendation_test(movies, ratings)
-#standard_collaborative_recommendation_test(movies, ratings)
+hybrid_test(movies, ratings)

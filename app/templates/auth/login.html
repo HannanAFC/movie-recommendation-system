@@ -1,3 +1,4 @@
+<<<<<<< HEAD:app/templates/auth/login.html
 {% extends "base.html" %}
 {% block content %}
 <form action="" method="post" id="login-form" class="flex flex-col max-w-100 mx-auto gap-2">
@@ -29,3 +30,22 @@
     });
 </script>
 {% endblock %}
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+<body>
+    <form action="/login" method="post">
+        <label for="username">Username</label>
+        <input type="text" name="username" id="username">
+        <label for="password">Password</label>
+        <input type="password" name="password" id="password">
+        <button type="submit">Login</button>
+    </form>
+</body>
+</html>
+>>>>>>> origin/Backend:app/frontend/templates/auth/login.html

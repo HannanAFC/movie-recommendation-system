@@ -48,6 +48,9 @@ class User(UserMixin, db.Model):
             algorithm="HS256"
         )
     
+    def get_user_ratings(self):
+        return db.session.scalars(sa.select(MovieRating).where(MovieRating.user_id == self.id)).all()
+    
     @staticmethod
     def verify_reset_password_token(token):
         try:

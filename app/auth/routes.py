@@ -7,6 +7,7 @@ from app import db, current_app
 from app.models import User
 import sqlalchemy as sa
 from urllib.parse import urlsplit
+from app.auth.password_reset import send_password_reset_email
 
 @bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -53,7 +54,6 @@ def register():
         password        = values["password"]
         repeat_password = values["repeat_password"]
         if email == None or username == None or password == None or repeat_password == None or password != repeat_password or not "@" in parseaddr(email)[1]:
-            print(f"{email} {username} {password} {repeat_password}")
             return redirect(url_for("auth.register"), code=400)
         else:
             user = User(username=username, email=email)
@@ -63,18 +63,38 @@ def register():
         return redirect(url_for("auth.login"))
     return render_template("auth/register.html", title="Register")
 
-@bp.route("/reset-password", methods=["GET", "POST"])
-def reset_password():
+@bp.route("/reset-password-request", methods=["GET", "POST"])
+def reset_password_request():
     if current_user.is_authenticated:
-        return redirect(url_for("main.index"))
+        return redirect(url_for("main.dashboard"))
     elif request.method == "POST":
-        return redirect(url_for("main.index"))
-    return render_template("auth/reset-password.html", title="Reset Password")
+        values = sanitise_form_inputs(request=request, fields=["email"])
+        email  = values["email"]
+        if email == None:
+            return redirect(url_for("auth.reset-password"), code=400)
+        else:
+            user = db.session.scalar(
+                sa.select(User).where(User.email == email)
+            )
+            if user:
+                send_password_reset_email(user)
+        return redirect(url_for("auth.login"))
+    return render_template("auth/reset-password-request.html", title="Reset Password")
 
-@bp.route("/reset-password<token>", methods=["GET", "POST"])
-def handle_reset_password(token):
+@bp.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
     if current_user.is_authenticated:
-        return redirect(url_for("main.index"))
-    elif request.method == "POST":
-        return redirect(url_for("main.index"))
+        return redirect(url_for("main.dashboard"))
+    user = User.verify_reset_password_token(token)
+    if user and request.method == "POST":
+        values = sanitise_form_inputs(request=request, fields=["password", "repeat_password"])
+        password        = values["password"]
+        repeat_password = values["repeat_password"]
+        print(password, repeat_password)
+        if password == repeat_password:
+            user.set_password(password=password)
+            db.session.commit()
+            return redirect(url_for("auth.login"))
+        else:
+            return redirect(url_for("auth.reset-password", token=token))      
     return render_template("auth/reset-password.html", title="Reset Password")

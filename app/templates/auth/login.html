@@ -9,6 +9,7 @@
     <label for="remember_me">Remember me</label>
     <input class="w-min" type="checkbox" name="remember_me" id="remember_me">
     <button class="cursor-pointer border-2 border-black p-2 rounded-sm" type="submit">Login</button>
+    <a href="{{ url_for('auth.reset_password_request') }}" class="cursor-pointer">Forgot your password? Click to reset it.</a>
 </form>
 <script>
     document.getElementById("login-form").addEventListener("submit", function( event )

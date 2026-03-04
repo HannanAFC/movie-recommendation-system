@@ -3,5 +3,11 @@
     "python-envs.pythonProjects": [],
     "terminal.integrated.env.windows": {
         "PYTHONPATH": "${workspaceFolder}"
+    },
+    "tailwindCSS.includeLanguages": {
+        "plaintext": "html"
+    },
+    "editor.quickSuggestions": {
+        "strings": true
     }
 }

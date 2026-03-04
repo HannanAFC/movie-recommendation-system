@@ -6,7 +6,7 @@ from app.main import bp
 @bp.route("/index")
 def index():
     if current_user.is_authenticated:
-        redirect(url_for("main.dashboard"))
+        return redirect(url_for("main.dashboard"))
     return render_template("index.html")
 
 @bp.route("/dashboard")

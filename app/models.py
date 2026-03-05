@@ -28,6 +28,7 @@ class User(UserMixin, db.Model):
     email:         Mapped[str]                    = mapped_column(sa.String(128), unique=True, index=True, nullable=False)
     password_hash: Mapped[str]                    = mapped_column(sa.String(256), nullable=False)
     movie_ratings: WriteOnlyMapped["MovieRating"] = relationship(back_populates="rating_author")
+    liked_movies: WriteOnlyMapped["LikedMovie"]  = relationship(back_populates="rating_author")
 
     def __repr__(self):
         return f"<User\n\tid: {self.id}\n\tusername: {self.username}\n\temail: {self.email}\n>"
@@ -48,10 +49,13 @@ class User(UserMixin, db.Model):
             algorithm="HS256"
         )
     
-    def get_user_ratings(self):
+    def get_user_ratings(self) -> list[MovieRating]:
         return db.session.scalars(sa.select(MovieRating).where(MovieRating.user_id == self.id)).all()
 
-    def get_reset_password_token(self, expires_in=600):
+    def get_liked_movies(self) -> list[MovieRating]:
+        return db.session.scalars(sa.select(LikedMovie).where(LikedMovie.user_id == self.id)).all()
+
+    def get_reset_password_token(self, expires_in=600) -> str:
         return jwt.encode(
             {
                 "user_id": self.id,
@@ -62,7 +66,7 @@ class User(UserMixin, db.Model):
         )
     
     @staticmethod
-    def verify_reset_password_token(token):
+    def verify_reset_password_token(token) -> User | None:
         try:
             decoded = jwt.decode(
                 jwt=token,
@@ -104,7 +108,7 @@ class Encrypted(sa.TypeDecorator):
 
 class MovieRating(db.Model):
     """
-    Movie rating model, stores the tmdb_id and rating of a movie for a user in encrypted form.
+    Movie rating model, stores the movieId and rating of a movie for a user in encrypted form.
     Parameters:
         movie_id(str): the id of the movie to be rated - str as it will be encrypted.
         rating(str):   the rating of the movie - str as it will be encrypted as well.
@@ -117,4 +121,19 @@ class MovieRating(db.Model):
     rating_author: Mapped[User] = relationship(back_populates="movie_ratings")
 
     def __repr__(self):
-        return f"<MovieRating\n\tid: {self.id}\n\tuser_id: {self.user_id}\n\ttmdb_id: {self.movie_id}\n\trating_author: {self.rating_author}\n>"
+        return f"<MovieRating\n\tid: {self.id}\n\tuser_id: {self.user_id}\n\nmovie_id: {self.movie_id}\n\trating_author: {self.rating_author}\n>"
+    
+class LikedMovie(db.Model):
+    """
+    Liked movies model, stored the movieId of a movie for a user in encrypted form.
+    Parameters:
+        movie_id(str): the id of the movie to be rated - str as it will be encrypted.
+        rating_author: User object of the user who the rating is associated with.
+    """
+    id:            Mapped[int]  = mapped_column(primary_key=True)
+    user_id:       Mapped[int]  = mapped_column(sa.ForeignKey(User.id), index=True, nullable=False)
+    movie_id:      Mapped[str]  = mapped_column(Encrypted(encryption_key), nullable=False)
+    rating_author: Mapped[User] = relationship(back_populates="liked_movies")
+
+    def __repr__(self):
+        return f"<MovieRating\n\tid: {self.id}\n\tuser_id: {self.user_id}\n\nmovie_id: {self.movie_id}\n>"

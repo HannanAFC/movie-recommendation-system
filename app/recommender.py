@@ -85,18 +85,22 @@ class CollaborativeRecommendationSystem():
         Parameters:
             user (User): The user to make recommendations for.
         """
-        # Get user's ratings (only those >=4.0)
-        user_ratings = user.get_user_ratings()
-        if not user_ratings:
-            warnings.warn("User has no ratings (>=4.0). Cannot generate recommendations.")
-            return []
-
-        # Get similar movies for each rated movie
+        # Get user's ratings (only those >=4.0) or if no ratings - get liked movies
+        user_ratings = [rating for rating in user.get_user_ratings() if float(rating.rating) >= 4.0]
+        movie_ids = []
+        if len(user_ratings) < 10:
+            liked_movies = user.get_liked_movies()
+            if len(liked_movies) == 0:
+                warnings.warn("User didn't have any ratings or liked movies.")
+                return []
+            else:
+                movie_ids = [liked_movie.movie_id for liked_movie in liked_movies]
+        else:
+            movie_ids = [rating.movie_id for rating in user_ratings]
+        
+        # Get similar movies for each rated/liked movie
         recommendations = []
-        for rating in user_ratings:
-            if float(rating.rating) < 4.0:
-                continue
-            movie_id = rating.movie_id
+        for movie_id in movie_ids:
             similar_movies = self.get_similar_movies(int(movie_id))
             recommendations.extend(similar_movies)
 
@@ -209,6 +213,7 @@ class ContentRecommendationSystem:
 
     
 class HybridRecommendationSystem:
+    
     def __init__(self, movies: pd.DataFrame, ratings: pd.DataFrame, collab_weight: float = 0.6, content_weight: float = 0.4):
         self.collab_weight = collab_weight
         self.content_weight = content_weight

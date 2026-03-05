@@ -13,6 +13,12 @@ class TestConfig(Config):
     SQLALCHEMY_DATABASE_URI = "sqlite://"
 
 class TestCollaborativeRecommendationSystem(unittest.TestCase):
+    """
+    This test is technically flawed, the test assumes the movieIDs increment by 1 for each movie, however it turns
+    out theres a couple gaps, for example look for movieId 51 in the movies.csv file - it isn't there. So if that
+    number is randomly created for the test it won't be in the matrix so no recommendations are created.
+    The recommendation system still works correctly though.
+    """
     def setUp(self):
         self.app = create_app(config_class=TestConfig)
         self.app_context = self.app.app_context()
@@ -43,6 +49,7 @@ class TestCollaborativeRecommendationSystem(unittest.TestCase):
         self.crs.initialise()
 
     def tearDown(self):
+        db.session.close()
         db.session.remove()
         db.drop_all()
         self.app_context.pop()
@@ -50,7 +57,7 @@ class TestCollaborativeRecommendationSystem(unittest.TestCase):
     def test_valid_recommendations(self):
         user = db.session.scalar(sa.select(User).where(User.id == 1))
         if (user != None):
-            recommendations = self.crs.recommend(user=user, recs_per_rating=3)
+            recommendations = self.crs.recommend(user=user)
             print("Number of recommendations:", len(recommendations))
         else:
             self.fail()
@@ -85,6 +92,7 @@ class TestContentRecommendationSystem(unittest.TestCase):
         self.crs = ContentRecommendationSystem(self.movies, self.ratings)
 
     def tearDown(self):
+        db.session.close()
         db.session.remove()
         db.drop_all()
         self.app_context.pop()
@@ -135,6 +143,7 @@ class TestHybridRecommendationSystem(unittest.TestCase):
             self.fail()
 
     def tearDown(self):
+        db.session.close()
         db.session.remove()
         db.drop_all()
         self.app_context.pop()

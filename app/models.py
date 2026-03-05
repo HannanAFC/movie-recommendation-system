@@ -17,8 +17,8 @@ encryption_key = os.environ["DB_SECRET_KEY"]
 
 class User(UserMixin, db.Model):
     """
-    User model for the application, inherits UserMixin to work properly with Flask and it's required methods and attributes.\n
-    Parameters:\n
+    User model for the application, inherits UserMixin to work properly with Flask and it's required methods and attributes.
+    Parameters:
         username (str):      desired username
         email (str):         desired email address
         password_hash (str): hashed password of the user (set using set_password)
@@ -80,8 +80,8 @@ def load_user(id):
 
 class Encrypted(sa.TypeDecorator):
     """
-    Encrypted data type for SQLAlchemy, used for storing the actual storing of tmdb_ids and rating_ids however in application use the data is unencrypted.\n
-    Parameter:\n
+    Encrypted data type for SQLAlchemy, used for storing the actual storing of tmdb_ids and rating_ids however in application use the data is unencrypted.
+    Parameter:
         encryption_key (str): The encryption key used to encrypt the data. Can be generated using generate_key.py
     """
     impl = sa.Text
@@ -104,8 +104,8 @@ class Encrypted(sa.TypeDecorator):
 
 class MovieRating(db.Model):
     """
-    Movie rating model, stores the tmdb_id and rating of a movie for a user in encrypted form.\n
-    Parameters:\n
+    Movie rating model, stores the tmdb_id and rating of a movie for a user in encrypted form.
+    Parameters:
         movie_id(str): the id of the movie to be rated - str as it will be encrypted.
         rating(str):   the rating of the movie - str as it will be encrypted as well.
         rating_author: User object of the user who the rating is associated with.

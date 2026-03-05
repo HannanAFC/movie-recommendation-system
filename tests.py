@@ -1,12 +1,10 @@
-from app.recommender import *
+from app.utils import extract_year, FileDownloader
 import pandas as pd
 from line_profiler import LineProfiler
-from urllib.request import urlretrieve
 from zipfile import ZipFile
 from os import mkdir
 from os import path
 import warnings
-import progressbar
 
 movies = None
 ratings = None
@@ -16,26 +14,6 @@ ratings_path = "app/datasets/ratings.csv"
 links_path = "app/datasets/links.csv"
 tags_path = "app/datasets/tags.csv"
 extracted_year_path = "app/datasets/extracted_year.csv"
-
-# File download helper for downloading the datasets, mainly for the progress bar
-class FileDownloader:
-    def __init__(self):
-        self.progress_bar = progressbar.ProgressBar(maxval=100)
-
-    def download_file(self, url, callback):
-        self.progress_bar.start()
-        response = urlretrieve(url, reporthook=self.update_progress)
-        self.progress_bar.finish()
-        if callback != None:
-            callback(response[0])
-
-    def update_progress(self, blocknum, blocksize, totalsize):
-        readed_data = blocknum * blocksize
-        if totalsize > 0:
-            download_percentage = readed_data * 100 / totalsize
-            if ( download_percentage <= 100 ):
-                self.progress_bar.update(download_percentage)
-
 
 # Not sure where this will be in the final project so will leave it here for now
 def datasets_initialisation(url):
@@ -83,29 +61,5 @@ def download_datasets(url):
     fd = FileDownloader()
     fd.download_file(url, download_datasets_callback)
 
-def standard_collaborative_recommendation_test(movies, ratings):
-    crs = CollaborativeRecommendationSystem(movies, ratings)
-    crs.initialise()
-    results = crs.recommend(1, 3)
-    print(results)
-
-def standard_content_recommendation_test(movies, ratings):
-    content = ContentRecommendationSystem(movies, ratings)
-    print(content.recommend(1))
-
-def extraction_test(movies):
-    extract_year(movies, extracted_year_path)
-
-def hybrid_test(movies, ratings):
-    hybrid = HybridRecommendationSystem(movies, ratings,
-                                         collab_weight=0.7,
-                                         content_weight=0.3)
-    results = hybrid.recommend(1, top_n=10)
-    print(results)
-
-#standard_content_recommendation_test()
-#standard_collaborative_recommendation_test()
-
 #movies, ratings, links, tags, extracted_year = datasets_initialisation("https://files.grouplens.org/datasets/movielens/ml-32m.zip")
 movies, ratings, links, tags, extracted_year = datasets_initialisation("https://files.grouplens.org/datasets/movielens/ml-latest-small.zip")
-hybrid_test(movies, ratings)

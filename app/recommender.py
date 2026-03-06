@@ -5,7 +5,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import MultiLabelBinarizer
 import warnings
 from typing import List, Tuple, Dict, Any
-from app.models import User, MovieRating
+from app.models import User, MovieRating, CachedRecommendation
 from app import db
 
 class CollaborativeRecommendationSystem():
@@ -226,7 +226,7 @@ class HybridRecommendationSystem:
         self.movies = movies
         self.ratings = ratings
 
-    def recommend(self, user: User, top_n: int = 10) -> List[Dict[str, Any]]:
+    def recommend(self, user: User, top_n: int = 10) -> List[Dict[int, float]]:
         """
         Generate hybrid movie recommendations for a user.
         Parameters:
@@ -267,11 +267,11 @@ class HybridRecommendationSystem:
         # Return top N movies with titles
         results = []
         for movie_id, score in sorted_movies[:top_n]:
-            movie_title = self.movies[self.movies.movieId == movie_id].title.values[0]
             results.append({
                 "movieId": int(movie_id),
-                "title": str(movie_title),
                 "score": float(score)
             })
+        
+        user.cache_recommendations(results)
 
         return results

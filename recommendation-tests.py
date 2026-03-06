@@ -260,5 +260,54 @@ class TestHybridRecommendationSystem(unittest.TestCase):
         else:
             self.fail()
 
+class TestMovieCaching(unittest.TestCase):
+
+    def setUp(self):
+
+        self.movies = pd.read_csv("app/datasets/movies.csv")
+        self.ratings = pd.read_csv("app/datasets/ratings.csv")
+        self.app = create_app(config_class=TestConfig)
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        db.create_all()
+    
+    def tearDown(self):
+
+        db.session.close()
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
+
+    def test_find_movies_in_cache(self):
+
+        rating_count = 20
+        ratings = [1.1, 1.7, 3.5, 2.4, 3.8, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4]
+
+        user = User(username=f"user", email=f"user@example.com")
+        user.set_password(f"password")
+        db.session.add(user)
+
+        for i in range(rating_count):
+            movie_rating = MovieRating(movie_id=randrange(1, 100), rating=ratings[i], rating_author=user)
+            db.session.add(movie_rating)
+
+        db.session.commit()
+
+        self.crs = HybridRecommendationSystem(self.movies, self.ratings)
+
+        user = db.session.scalar(sa.select(User).where(User.id == 1))
+        if (user != None):
+            recommendations = self.crs.recommend(user=user)
+            for rec_obj in user.get_cached_recommendations():
+                matching = False
+                for rec in recommendations:
+                    if rec["movieId"] == str(rec_obj.movie_id) and rec["score"] == rec_obj.score:
+                        matching = True
+
+
+                self.assertFalse(matching)
+        else:
+            self.fail()
+
 if __name__ == "__main__":
     unittest.main()

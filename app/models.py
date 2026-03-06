@@ -10,6 +10,7 @@ from time import time
 import pickle
 import os
 from dotenv import load_dotenv
+from datetime import datetime, timezone
 
 load_dotenv(".flaskenv")
 encryption_key = os.environ["DB_SECRET_KEY"]
@@ -23,12 +24,13 @@ class User(UserMixin, db.Model):
         email (str):         desired email address
         password_hash (str): hashed password of the user (set using set_password)
     """
-    id:            Mapped[int]                    = mapped_column(primary_key=True)
-    username:      Mapped[str]                    = mapped_column(sa.String(64), unique=True, index=True, nullable=False)
-    email:         Mapped[str]                    = mapped_column(sa.String(128), unique=True, index=True, nullable=False)
-    password_hash: Mapped[str]                    = mapped_column(sa.String(256), nullable=False)
-    movie_ratings: WriteOnlyMapped["MovieRating"] = relationship(back_populates="rating_author")
-    liked_movies: WriteOnlyMapped["LikedMovie"]  = relationship(back_populates="rating_author")
+    id:                     Mapped[int]                             = mapped_column(primary_key=True)
+    username:               Mapped[str]                             = mapped_column(sa.String(64), unique=True, index=True, nullable=False)
+    email:                  Mapped[str]                             = mapped_column(sa.String(128), unique=True, index=True, nullable=False)
+    password_hash:          Mapped[str]                             = mapped_column(sa.String(256), nullable=False)
+    movie_ratings:          WriteOnlyMapped["MovieRating"]          = relationship(back_populates="rating_author")
+    liked_movies:           WriteOnlyMapped["LikedMovie"]           = relationship(back_populates="rating_author")
+    cached_recommendations: WriteOnlyMapped["CachedRecommendation"] = relationship(back_populates="user")
 
     def __repr__(self):
         return f"<User\n\tid: {self.id}\n\tusername: {self.username}\n\temail: {self.email}\n>"
@@ -50,10 +52,10 @@ class User(UserMixin, db.Model):
         )
     
     def get_user_ratings(self) -> list[MovieRating]:
-        return db.session.scalars(sa.select(MovieRating).where(MovieRating.user_id == self.id)).all()
+        return db.session.scalars(sa.select(MovieRating).where(MovieRating.rating_author == self)).all()
 
-    def get_liked_movies(self) -> list[MovieRating]:
-        return db.session.scalars(sa.select(LikedMovie).where(LikedMovie.user_id == self.id)).all()
+    def get_liked_movies(self) -> list[LikedMovie]:
+        return db.session.scalars(sa.select(LikedMovie).where(LikedMovie.rating_author == self)).all()
 
     def get_reset_password_token(self, expires_in=600) -> str:
         return jwt.encode(
@@ -65,6 +67,31 @@ class User(UserMixin, db.Model):
             algorithm="HS256"
         )
     
+    def get_cached_recommendations(self) -> list[CachedRecommendation]:
+        return db.session.scalars(sa.select(CachedRecommendation).where(CachedRecommendation.user == self)).all()
+    
+    def cache_recommendations(self, recommendations: list[dict[str, float]]) -> None:
+        """
+        Cache the given list of recommendations for the current user. Removes all old recommendations for the user before adding the new ones.
+        Parameters:
+           recommendations (list[dict[str, float]]): A list of dictionaries containing the movie ID and score for each recommendation.
+        """
+        recommendation_objects = []
+
+        db.session.query(CachedRecommendation).where(CachedRecommendation.user == self).delete()
+
+        for recommendation in recommendations:
+            recommendation_object = CachedRecommendation(
+                movie_id=recommendation["movieId"],
+                score=recommendation["score"],
+                user=self
+            )
+            
+            recommendation_objects.append(recommendation_object)
+
+        db.session.add_all(recommendation_objects)
+        db.session.commit()
+
     @staticmethod
     def verify_reset_password_token(token) -> User | None:
         try:
@@ -137,3 +164,21 @@ class LikedMovie(db.Model):
 
     def __repr__(self):
         return f"<MovieRating\n\tid: {self.id}\n\tuser_id: {self.user_id}\n\nmovie_id: {self.movie_id}\n>"
+    
+class CachedRecommendation(db.Model):
+    """
+    Model to securely store cached recommendations with timestamps, prevents having to constantly create new recommendations.
+    Parameters:
+        movie_id (str): id of the movie to be cached.
+        score (float):  hybrid recommendation score.
+        user (User):    the user who is associated with the recommendation.
+    """
+    id:        Mapped[int]      = mapped_column(primary_key=True)
+    user_id:   Mapped[int]      = mapped_column(sa.ForeignKey(User.id), index=True, nullable=False)
+    movie_id:  Mapped[str]      = mapped_column(Encrypted(encryption_key), nullable=False)
+    score:     Mapped[float]    = mapped_column(nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(sa.DateTime, default=datetime.now(timezone.utc))
+    user:      Mapped[User]     = relationship(back_populates="cached_recommendations")
+
+    def __repr__(self):
+        return f"<CachedRecommendation\n\tid: {self.id}\n\tuser_id: {self.user_id}\n\tmovie_id: {self.movie_id}\n\tscore: {self.score}\n\ttimestamp: {self.timestamp}\n>"

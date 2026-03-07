@@ -19,9 +19,6 @@ def seed():
 @click.argument("user_count")
 def users(user_count):
     """Seed users."""
-    # running downgrade base doesn't remove the movie_rating table for some reason so just
-    # hard remove the database, probably not the correct way.
-    os.system("rm app.db")
     os.system("flask db downgrade base")
     os.system("flask db upgrade")
 
@@ -38,7 +35,6 @@ def users(user_count):
 @click.argument("ratings_per_user")
 def all(user_count, ratings_per_user):
     """Seed users and movie ratings."""
-    os.system("rm app.db")
     os.system("flask db downgrade base")
     os.system("flask db upgrade")
 
@@ -62,7 +58,15 @@ def all(user_count, ratings_per_user):
 @seed.command()
 def drop():
     """Reset the database."""
-    os.system("rm app.db")
     os.system("flask db downgrade base")
     os.system("flask db upgrade")
     print("Table restored to empty.")
+
+@bp.cli.group()
+def test_email_server():
+    pass
+
+@test_email_server.command()
+def start():
+    """Start the testing email server"""
+    os.system("aiosmtpd -n -c aiosmtpd.handlers.Debugging -l localhost:8025")

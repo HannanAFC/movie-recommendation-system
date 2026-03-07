@@ -6,11 +6,21 @@ from app.models import User, MovieRating, LikedMovie
 from random import randrange
 import sqlalchemy as sa
 import pandas as pd
+from app.utils import prepare_test_environment
+
+test_dataset_location = "app/test_temp/"
+local_filename = "test_dataset.zip"
 
 class TestConfig(Config):
     Testing = True
     # Redirect SQLAlchemy to special in-memory database for tests
     SQLALCHEMY_DATABASE_URI = "sqlite://"
+    DATASETS_BASE = "app/test_datasets"
+    MOVIES_PATH = "app/test_datasets/movies.csv"
+    RATINGS_PATH = "app/test_datasets/ratings.csv"
+    LINKS_PATH = "app/test_datasets/links.csv"
+    TAGS_PATH = "app/test_datasets/tags.csv"
+    EXTRACTED_YEAR_PATH = "app/test_datasets/extracted_year.csv"
 
 class TestCollaborativeRecommendationSystem(unittest.TestCase):
     
@@ -39,8 +49,8 @@ class TestCollaborativeRecommendationSystem(unittest.TestCase):
         rating_count = 20
         ratings = [1.1, 1.7, 3.5, 2.4, 3.8, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4]
 
-        self.movies = pd.read_csv("app/datasets/movies.csv")
-        self.ratings = pd.read_csv("app/datasets/ratings.csv")
+        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
+        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
 
         user = User(username=f"user", email=f"user@example.com")
         user.set_password(f"password")
@@ -65,8 +75,8 @@ class TestCollaborativeRecommendationSystem(unittest.TestCase):
     def test_has_no_ratings_has_likes(self):
 
         likes_count = 15
-        self.movies = pd.read_csv("app/datasets/movies.csv")
-        self.ratings = pd.read_csv("app/datasets/ratings.csv")
+        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
+        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
 
         user = User(username=f"user", email=f"user@example.com")
         user.set_password(f"password")
@@ -90,8 +100,8 @@ class TestCollaborativeRecommendationSystem(unittest.TestCase):
 
     def test_has_no_ratings_has_no_likes(self):
 
-        self.movies = pd.read_csv("app/datasets/movies.csv")
-        self.ratings = pd.read_csv("app/datasets/ratings.csv")
+        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
+        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
 
         user = User(username=f"user", email=f"user@example.com")
         user.set_password(f"password")
@@ -130,8 +140,8 @@ class TestContentRecommendationSystem(unittest.TestCase):
         rating_count = 20
         ratings = [1.1, 1.7, 3.5, 2.4, 3.8, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4]
 
-        self.movies = pd.read_csv("app/datasets/movies.csv")
-        self.ratings = pd.read_csv("app/datasets/ratings.csv")
+        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
+        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
 
         user = User(username=f"user", email=f"user@example.com")
         user.set_password(f"password")
@@ -154,8 +164,8 @@ class TestContentRecommendationSystem(unittest.TestCase):
     
     def test_has_no_ratings(self):
 
-        self.movies = pd.read_csv("app/datasets/movies.csv")
-        self.ratings = pd.read_csv("app/datasets/ratings.csv")
+        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
+        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
 
         user = User(username=f"user", email=f"user@example.com")
         user.set_password(f"password")
@@ -193,8 +203,8 @@ class TestHybridRecommendationSystem(unittest.TestCase):
         rating_count = 20
         ratings = [1.1, 1.7, 3.5, 2.4, 3.8, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4]
 
-        self.movies = pd.read_csv("app/datasets/movies.csv")
-        self.ratings = pd.read_csv("app/datasets/ratings.csv")
+        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
+        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
 
         user = User(username=f"user", email=f"user@example.com")
         user.set_password(f"password")
@@ -218,8 +228,8 @@ class TestHybridRecommendationSystem(unittest.TestCase):
     def test_has_no_ratings_has_likes(self):
 
         likes_count = 15
-        self.movies = pd.read_csv("app/datasets/movies.csv")
-        self.ratings = pd.read_csv("app/datasets/ratings.csv")
+        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
+        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
 
         user = User(username=f"user", email=f"user@example.com")
         user.set_password(f"password")
@@ -242,8 +252,8 @@ class TestHybridRecommendationSystem(unittest.TestCase):
 
     def test_has_no_ratings_has_no_likes(self):
 
-        self.movies = pd.read_csv("app/datasets/movies.csv")
-        self.ratings = pd.read_csv("app/datasets/ratings.csv")
+        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
+        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
 
         user = User(username=f"user", email=f"user@example.com")
         user.set_password(f"password")
@@ -264,12 +274,12 @@ class TestMovieCaching(unittest.TestCase):
 
     def setUp(self):
 
-        self.movies = pd.read_csv("app/datasets/movies.csv")
-        self.ratings = pd.read_csv("app/datasets/ratings.csv")
         self.app = create_app(config_class=TestConfig)
         self.app_context = self.app.app_context()
         self.app_context.push()
         db.create_all()
+        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
+        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
     
     def tearDown(self):
 
@@ -310,4 +320,5 @@ class TestMovieCaching(unittest.TestCase):
             self.fail()
 
 if __name__ == "__main__":
+    prepare_test_environment("https://files.grouplens.org/datasets/movielens/ml-latest-small.zip", test_dataset_location, local_filename)
     unittest.main()

@@ -29,6 +29,12 @@ class TestDatasetManager(unittest.TestCase):
         db.drop_all()
         self.app_context.pop()
 
+        try:
+            shutil.rmtree(self.app.config["DATASETS_BASE"])
+        except FileNotFoundError:
+            pass
+        os.makedirs(self.app.config["DATASETS_BASE"], exist_ok=True)
+
     def test_full_parsing(self):
         try:
             shutil.rmtree(self.app.config["DATASETS_BASE"])

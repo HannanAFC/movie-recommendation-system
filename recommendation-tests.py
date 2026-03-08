@@ -1,12 +1,14 @@
 from app.recommender import CollaborativeRecommendationSystem, ContentRecommendationSystem, HybridRecommendationSystem
 import unittest
-from app import create_app, db
+from app import create_app, db, dataset_manager
 from config import Config
 from app.models import User, MovieRating, LikedMovie
 from random import randrange
 import sqlalchemy as sa
 import pandas as pd
 from app.utils import prepare_test_environment
+import shutil
+import os
 
 test_dataset_location = "app/test_temp/"
 local_filename = "test_dataset.zip"
@@ -37,12 +39,21 @@ class TestCollaborativeRecommendationSystem(unittest.TestCase):
         self.app_context.push()
         db.create_all()
 
+        dataset_manager._DatasetManager__parse_downloaded_dataset(test_dataset_location + local_filename)
+        dataset_manager.validate_download()
+
     def tearDown(self):
 
         db.session.close()
         db.session.remove()
         db.drop_all()
         self.app_context.pop()
+
+        try:
+            shutil.rmtree(self.app.config["DATASETS_BASE"])
+        except FileNotFoundError:
+            pass
+        os.makedirs(self.app.config["DATASETS_BASE"], exist_ok=True)
 
     def test_has_ratings(self):
 
@@ -128,12 +139,21 @@ class TestContentRecommendationSystem(unittest.TestCase):
         self.app_context.push()
         db.create_all()
 
+        dataset_manager._DatasetManager__parse_downloaded_dataset(test_dataset_location + local_filename)
+        dataset_manager.validate_download()
+
     def tearDown(self):
 
         db.session.close()
         db.session.remove()
         db.drop_all()
         self.app_context.pop()
+
+        try:
+            shutil.rmtree(self.app.config["DATASETS_BASE"])
+        except FileNotFoundError:
+            pass
+        os.makedirs(self.app.config["DATASETS_BASE"], exist_ok=True)
 
     def test_has_ratings(self):
 
@@ -190,6 +210,9 @@ class TestHybridRecommendationSystem(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
         db.create_all()
+
+        dataset_manager._DatasetManager__parse_downloaded_dataset(test_dataset_location + local_filename)
+        dataset_manager.validate_download()
     
     def tearDown(self):
 
@@ -278,6 +301,10 @@ class TestMovieCaching(unittest.TestCase):
         self.app_context = self.app.app_context()
         self.app_context.push()
         db.create_all()
+
+        dataset_manager._DatasetManager__parse_downloaded_dataset(test_dataset_location + local_filename)
+        dataset_manager.validate_download()
+
         self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
         self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
     
@@ -287,6 +314,12 @@ class TestMovieCaching(unittest.TestCase):
         db.session.remove()
         db.drop_all()
         self.app_context.pop()
+
+        try:
+            shutil.rmtree(self.app.config["DATASETS_BASE"])
+        except FileNotFoundError:
+            pass
+        os.makedirs(self.app.config["DATASETS_BASE"], exist_ok=True)
 
     def test_find_movies_in_cache(self):
 

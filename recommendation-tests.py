@@ -1,5 +1,6 @@
 from app.recommender import CollaborativeRecommendationSystem, ContentRecommendationSystem, HybridRecommendationSystem
 import unittest
+from unittest.mock import patch
 from app import create_app, db, dataset_manager
 from config import Config
 from app.models import User, MovieRating, LikedMovie
@@ -9,9 +10,12 @@ import pandas as pd
 from app.utils import prepare_test_environment
 import shutil
 import os
+from cryptography.fernet import Fernet
 
 test_dataset_location = "app/test_temp/"
 local_filename = "test_dataset.zip"
+
+TEST_KEY = Fernet.generate_key()
 
 class TestConfig(Config):
     Testing = True
@@ -42,6 +46,14 @@ class TestCollaborativeRecommendationSystem(unittest.TestCase):
         dataset_manager._DatasetManager__parse_downloaded_dataset(test_dataset_location + local_filename)
         dataset_manager.validate_download()
 
+        self.user = User(username=f"user", email=f"user@example.com")
+        self.user.set_password(f"password")
+        db.session.add(self.user)
+        db.session.commit()
+
+        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
+        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
+
     def tearDown(self):
 
         db.session.close()
@@ -55,20 +67,16 @@ class TestCollaborativeRecommendationSystem(unittest.TestCase):
             pass
         os.makedirs(self.app.config["DATASETS_BASE"], exist_ok=True)
 
-    def test_has_ratings(self):
+    @patch("app.models.get_encryption_key")
+    def test_has_ratings(self, mock_key):
+
+        mock_key.return_value = TEST_KEY
 
         rating_count = 20
-        ratings = [1.1, 1.7, 3.5, 2.4, 3.8, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4]
-
-        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
-        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
-
-        user = User(username=f"user", email=f"user@example.com")
-        user.set_password(f"password")
-        db.session.add(user)
+        ratings = [1.1, 1.7, 3.5, 2.4, 3.8, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4]        
 
         for i in range(rating_count):
-            movie_rating = MovieRating(movie_id=randrange(1, 100), rating=ratings[i], rating_author=user)
+            movie_rating = MovieRating(movie_id=randrange(1, 100), rating=ratings[i], rating_author=self.user)
             db.session.add(movie_rating)
 
         db.session.commit()
@@ -83,18 +91,15 @@ class TestCollaborativeRecommendationSystem(unittest.TestCase):
         else:
             self.fail("User not found.")
 
-    def test_has_no_ratings_has_likes(self):
+    @patch("app.models.get_encryption_key")
+    def test_has_no_ratings_has_likes(self, mock_key):
+
+        mock_key.return_value = TEST_KEY
 
         likes_count = 15
-        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
-        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
-
-        user = User(username=f"user", email=f"user@example.com")
-        user.set_password(f"password")
-        db.session.add(user)
 
         for i in range(likes_count):
-            liked_movie = LikedMovie(movie_id=randrange(1, 100), rating_author=user)
+            liked_movie = LikedMovie(movie_id=randrange(1, 100), rating_author=self.user)
             db.session.add(liked_movie)
 
         db.session.commit()
@@ -109,16 +114,10 @@ class TestCollaborativeRecommendationSystem(unittest.TestCase):
         else:
             self.fail("User not found.")
 
-    def test_has_no_ratings_has_no_likes(self):
+    @patch("app.models.get_encryption_key")
+    def test_has_no_ratings_has_no_likes(self, mock_key):
 
-        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
-        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
-
-        user = User(username=f"user", email=f"user@example.com")
-        user.set_password(f"password")
-        db.session.add(user)
-
-        db.session.commit()
+        mock_key.return_value = TEST_KEY
 
         self.crs = CollaborativeRecommendationSystem(movies=self.movies, ratings=self.ratings)
         self.crs.initialise()
@@ -127,6 +126,7 @@ class TestCollaborativeRecommendationSystem(unittest.TestCase):
         if (user != None):
             recommendations = self.crs.recommend(user=user)
             print("Number of recommendations:", len(recommendations))
+            self.assertEqual(len(recommendations), 0)
         else:
             self.fail("User not found.")
 
@@ -142,6 +142,14 @@ class TestContentRecommendationSystem(unittest.TestCase):
         dataset_manager._DatasetManager__parse_downloaded_dataset(test_dataset_location + local_filename)
         dataset_manager.validate_download()
 
+        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
+        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
+
+        self.user = User(username=f"user", email=f"user@example.com")
+        self.user.set_password(f"password")
+        db.session.add(self.user)
+        db.session.commit()
+
     def tearDown(self):
 
         db.session.close()
@@ -155,20 +163,16 @@ class TestContentRecommendationSystem(unittest.TestCase):
             pass
         os.makedirs(self.app.config["DATASETS_BASE"], exist_ok=True)
 
-    def test_has_ratings(self):
+    @patch("app.models.get_encryption_key")
+    def test_has_ratings(self, mock_key):
+
+        mock_key.return_value = TEST_KEY
 
         rating_count = 20
         ratings = [1.1, 1.7, 3.5, 2.4, 3.8, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4]
 
-        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
-        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
-
-        user = User(username=f"user", email=f"user@example.com")
-        user.set_password(f"password")
-        db.session.add(user)
-
         for i in range(rating_count):
-            movie_rating = MovieRating(movie_id=randrange(1, 100), rating=ratings[i], rating_author=user)
+            movie_rating = MovieRating(movie_id=randrange(1, 100), rating=ratings[i], rating_author=self.user)
             db.session.add(movie_rating)
 
         db.session.commit()
@@ -182,14 +186,13 @@ class TestContentRecommendationSystem(unittest.TestCase):
         else:
             self.fail("User not found")
     
-    def test_has_no_ratings(self):
+    @patch("app.models.get_encryption_key")
+    def test_has_no_ratings(self, mock_key):
+
+        mock_key.return_value = TEST_KEY
 
         self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
         self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
-
-        user = User(username=f"user", email=f"user@example.com")
-        user.set_password(f"password")
-        db.session.add(user)
 
         db.session.commit()
 
@@ -213,6 +216,14 @@ class TestHybridRecommendationSystem(unittest.TestCase):
 
         dataset_manager._DatasetManager__parse_downloaded_dataset(test_dataset_location + local_filename)
         dataset_manager.validate_download()
+
+        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
+        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
+
+        self.user = User(username=f"user", email=f"user@example.com")
+        self.user.set_password(f"password")
+        db.session.add(self.user)
+        db.session.commit()
     
     def tearDown(self):
 
@@ -221,20 +232,16 @@ class TestHybridRecommendationSystem(unittest.TestCase):
         db.drop_all()
         self.app_context.pop()
 
-    def test_user_has_ratings(self):
+    @patch("app.models.get_encryption_key")
+    def test_user_has_ratings(self, mock_key):
+
+        mock_key.return_value = TEST_KEY
 
         rating_count = 20
         ratings = [1.1, 1.7, 3.5, 2.4, 3.8, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4]
 
-        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
-        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
-
-        user = User(username=f"user", email=f"user@example.com")
-        user.set_password(f"password")
-        db.session.add(user)
-
         for i in range(rating_count):
-            movie_rating = MovieRating(movie_id=randrange(1, 100), rating=ratings[i], rating_author=user)
+            movie_rating = MovieRating(movie_id=randrange(1, 100), rating=ratings[i], rating_author=self.user)
             db.session.add(movie_rating)
 
         db.session.commit()
@@ -248,18 +255,15 @@ class TestHybridRecommendationSystem(unittest.TestCase):
         else:
             self.fail()
 
-    def test_has_no_ratings_has_likes(self):
+    @patch("app.models.get_encryption_key")
+    def test_has_no_ratings_has_likes(self, mock_key):
+
+        mock_key.return_value = TEST_KEY
 
         likes_count = 15
-        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
-        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
-
-        user = User(username=f"user", email=f"user@example.com")
-        user.set_password(f"password")
-        db.session.add(user)
 
         for i in range(likes_count):
-            liked_movie = LikedMovie(movie_id=randrange(1, 100), rating_author=user)
+            liked_movie = LikedMovie(movie_id=randrange(1, 100), rating_author=self.user)
             db.session.add(liked_movie)
 
         db.session.commit()
@@ -273,14 +277,10 @@ class TestHybridRecommendationSystem(unittest.TestCase):
         else:
             self.fail()
 
-    def test_has_no_ratings_has_no_likes(self):
+    @patch("app.models.get_encryption_key")
+    def test_has_no_ratings_has_no_likes(self, mock_key):
 
-        self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
-        self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
-
-        user = User(username=f"user", email=f"user@example.com")
-        user.set_password(f"password")
-        db.session.add(user)
+        mock_key.return_value = TEST_KEY
 
         db.session.commit()
 
@@ -307,6 +307,10 @@ class TestMovieCaching(unittest.TestCase):
 
         self.movies = pd.read_csv(self.app.config["MOVIES_PATH"])
         self.ratings = pd.read_csv(self.app.config["RATINGS_PATH"])
+
+        self.user = User(username=f"user", email=f"user@example.com")
+        self.user.set_password(f"password")
+        db.session.add(self.user)
     
     def tearDown(self):
 
@@ -321,17 +325,16 @@ class TestMovieCaching(unittest.TestCase):
             pass
         os.makedirs(self.app.config["DATASETS_BASE"], exist_ok=True)
 
-    def test_find_movies_in_cache(self):
+    @patch("app.models.get_encryption_key")
+    def test_find_movies_in_cache(self, mock_key):
+
+        mock_key.return_value = TEST_KEY
 
         rating_count = 20
         ratings = [1.1, 1.7, 3.5, 2.4, 3.8, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4, 4.1, 4.2, 4.2, 4.1, 4,4]
 
-        user = User(username=f"user", email=f"user@example.com")
-        user.set_password(f"password")
-        db.session.add(user)
-
         for i in range(rating_count):
-            movie_rating = MovieRating(movie_id=randrange(1, 100), rating=ratings[i], rating_author=user)
+            movie_rating = MovieRating(movie_id=randrange(1, 100), rating=ratings[i], rating_author=self.user)
             db.session.add(movie_rating)
 
         db.session.commit()

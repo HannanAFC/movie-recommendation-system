@@ -1,8 +1,10 @@
 import unittest
+from unittest.mock import patch
 from app import create_app, db
 from app.models import User, MovieRating
 from config import Config
 from sqlalchemy.exc import IntegrityError
+from cryptography.fernet import Fernet
 
 class TestConfig(Config):
     Testing = True
@@ -65,6 +67,8 @@ class TestUserModel(unittest.TestCase):
         db.session.add(user)
         self.assertRaises(IntegrityError, db.session.commit)
 
+TEST_KEY = Fernet.generate_key()
+
 class TestMovieRatingModel(unittest.TestCase):
 
     def setUp(self):
@@ -78,7 +82,11 @@ class TestMovieRatingModel(unittest.TestCase):
         db.drop_all()
         self.app_context.pop()
 
-    def test_movie_rating_creation(self):
+    @patch("app.models.get_encryption_key")
+    def test_movie_rating_creation(self, mock_key):
+
+        mock_key.return_value = TEST_KEY
+
         user = User(username="testuser", email="test@example.com")
         user.set_password("password")
         db.session.add(user)

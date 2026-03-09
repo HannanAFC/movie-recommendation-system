@@ -26,15 +26,15 @@ class User(UserMixin, db.Model):
         email (str):         desired email address
         password_hash (str): hashed password of the user (set using set_password)
     """
-    id:                     Mapped[int]                             = mapped_column(primary_key=True)
-    username:               Mapped[str]                             = mapped_column(sa.String(64), unique=True, index=True, nullable=False)
-    email:                  Mapped[str]                             = mapped_column(sa.String(128), unique=True, index=True, nullable=False)
-    password_hash:          Mapped[str]                             = mapped_column(sa.String(256), nullable=False)
-    encrypted_dek:          Mapped[str]                             = mapped_column(sa.LargeBinary, nullable=False)
-    dek_salt:               Mapped[str]                             = mapped_column(sa.LargeBinary, nullable=False)
-    movie_ratings:          WriteOnlyMapped["MovieRating"]          = relationship(back_populates="rating_author")
-    liked_movies:           WriteOnlyMapped["LikedMovie"]           = relationship(back_populates="rating_author")
-    cached_recommendations: WriteOnlyMapped["CachedRecommendation"] = relationship(back_populates="user")
+    id:                     Mapped[int]                              = mapped_column(primary_key=True)
+    username:               Mapped[str]                              = mapped_column(sa.String(64), unique=True, index=True, nullable=False)
+    email:                  Mapped[str]                              = mapped_column(sa.String(128), unique=True, index=True, nullable=False)
+    password_hash:          Mapped[str]                              = mapped_column(sa.String(256), nullable=False)
+    encrypted_dek:          Mapped[str]                              = mapped_column(sa.LargeBinary, nullable=False)
+    dek_salt:               Mapped[str]                              = mapped_column(sa.LargeBinary, nullable=False)
+    movie_ratings:          WriteOnlyMapped["MovieRating"]           = relationship(back_populates="rating_author")
+    liked_movies:           WriteOnlyMapped["LikedMovie"]            = relationship(back_populates="rating_author")
+    recommendation_sets:    WriteOnlyMapped["RecommendationSet"]     = relationship(back_populates="user")
 
     def __repr__(self):
         return f"<User\n\tid: {self.id}\n\tusername: {self.username}\n\temail: {self.email}\n>"
@@ -126,30 +126,41 @@ class User(UserMixin, db.Model):
             algorithm="HS256"
         )
     
-    def get_cached_recommendations(self) -> list[CachedRecommendation]:
-        return db.session.scalars(sa.select(CachedRecommendation).where(CachedRecommendation.user == self)).all()
-    
-    def cache_recommendations(self, recommendations: list[dict[str, float]]) -> None:
+    def get_cached_recommendation_sets(self, pagination: int = 10) -> list[RecommendationSet]:
         """
-        Cache the given list of recommendations for the current user. Removes all old recommendations for the user before adding the new ones.
+        Get the cached recommendation sets for the current user.
+        Parameters:
+            pagination (int): The maximum number of recommendation sets to return. Defaults to 10.
+        """
+        return db.session.scalars(sa.select(RecommendationSet).where(RecommendationSet.user == self).limit(pagination)).all()
+    
+    def cache_recommendation_set(self, recommendations: list[dict[str, float]]) -> None:
+        """
+        Cache the given list of recommendations for the current user. Maximum of 10 sets cand be stored, when this limit is reached the oldest will be removed.
         Parameters:
            recommendations (list[dict[str, float]]): A list of dictionaries containing the movie ID and score for each recommendation.
         """
         recommendation_objects = []
 
-        db.session.query(CachedRecommendation).where(CachedRecommendation.user == self).delete()
+        recommendation_set = RecommendationSet(user=self)
 
         for recommendation in recommendations:
             recommendation_object = CachedRecommendation(
                 movie_id=recommendation["movieId"],
                 score=recommendation["score"],
-                user=self
+                user_set=recommendation_set
             )
             
             recommendation_objects.append(recommendation_object)
 
+        db.session.add(recommendation_set)
         db.session.add_all(recommendation_objects)
         db.session.commit()
+
+        current_sets = db.session.scalars(sa.select(RecommendationSet).where(RecommendationSet.user == self).order_by(RecommendationSet.timestamp.desc()).limit(10)).all()
+        if len(current_sets) > 10:
+            db.session.delete(current_sets[0])
+            db.session.commit()
 
     @staticmethod
     def verify_reset_password_token(token) -> User | None:
@@ -229,20 +240,35 @@ class LikedMovie(db.Model):
     def __repr__(self):
         return f"<MovieRating\n\tid: {self.id}\n\tuser_id: {self.user_id}\n\nmovie_id: {self.movie_id}\n>"
     
-class CachedRecommendation(db.Model):
+class RecommendationSet(db.Model):
     """
-    Model to securely store cached recommendations with timestamps, prevents having to constantly create new recommendations.
+    Model to store a set of recommendations for a user, all generated at once.
     Parameters:
-        movie_id (str): id of the movie to be cached.
-        score (float):  hybrid recommendation score.
-        user (User):    the user who is associated with the recommendation.
+        user (User):          the user associated with the recommendation set.
+        timestamp (datetime): when the set was generated.
     """
-    id:        Mapped[int]      = mapped_column(primary_key=True)
-    user_id:   Mapped[int]      = mapped_column(sa.ForeignKey(User.id), index=True, nullable=False)
-    movie_id:  Mapped[str]      = mapped_column(Encrypted(), nullable=False)
-    score:     Mapped[float]    = mapped_column(nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(sa.DateTime, default=datetime.now(timezone.utc))
-    user:      Mapped[User]     = relationship(back_populates="cached_recommendations")
+    id:                      Mapped[int]                             = mapped_column(primary_key=True)
+    user_id:                 Mapped[int]                             = mapped_column(sa.ForeignKey(User.id), index=True, nullable=False)
+    timestamp:               Mapped[datetime]                        = mapped_column(sa.DateTime, default=datetime.now(timezone.utc))
+    user:                    Mapped[User]                            = relationship(back_populates="recommendation_sets")
+    cached_recommendations:  WriteOnlyMapped["CachedRecommendation"] = relationship(back_populates="user_set")
 
     def __repr__(self):
-        return f"<CachedRecommendation\n\tid: {self.id}\n\tuser_id: {self.user_id}\n\tmovie_id: {self.movie_id}\n\tscore: {self.score}\n\ttimestamp: {self.timestamp}\n>"
+        return f"<RecommendationSet\n\tid: {self.id}\n\tuser_id: {self.user_id}\n\ttimestamp: {self.timestamp}\n>"
+
+class CachedRecommendation(db.Model):
+    """
+    Model to store individual recommendations within a set.
+    Parameters:
+        movie_id (str):               id of the movie.
+        score (float):                hybrid recommendation score.
+        user_set (RecommendationSet): the set these recommendations belong to.
+    """
+    id:          Mapped[int]               = mapped_column(primary_key=True)
+    user_set_id: Mapped[int]               = mapped_column(sa.ForeignKey(RecommendationSet.id), index=True, nullable=False)
+    movie_id:    Mapped[str]               = mapped_column(Encrypted(), nullable=False)
+    score:       Mapped[float]             = mapped_column(nullable=False)
+    user_set:    Mapped[RecommendationSet] = relationship(back_populates="cached_recommendations")
+
+    def __repr__(self):
+        return f"<CachedRecommendation\n\tid: {self.id}\n\tuser_set_id: {self.user_set_id}\n\tmovie_id: {self.movie_id}\n\tscore: {self.score}\n>"

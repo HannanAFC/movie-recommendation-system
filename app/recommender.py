@@ -272,6 +272,6 @@ class HybridRecommendationSystem:
                 "score": float(score)
             })
         
-        user.cache_recommendations(results)
+        user.cache_recommendation_set(results)
 
         return results

@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 from app import create_app, db, dataset_manager
 from config import Config
-from app.models import User, MovieRating, LikedMovie
+from app.models import User, MovieRating, LikedMovie, CachedRecommendation
 from random import randrange
 import sqlalchemy as sa
 import pandas as pd
@@ -344,12 +344,12 @@ class TestMovieCaching(unittest.TestCase):
         user = db.session.scalar(sa.select(User).where(User.id == 1))
         if (user != None):
             recommendations = self.crs.recommend(user=user)
-            for rec_obj in user.get_cached_recommendations():
+            for rec_set in user.get_cached_recommendation_sets():
                 matching = False
-                for rec in recommendations:
-                    if rec["movieId"] == str(rec_obj.movie_id) and rec["score"] == rec_obj.score:
-                        matching = True
-
+                for rec_obj in CachedRecommendation.query.filter_by(user_set_id = rec_set.id).limit(1):
+                    for rec in recommendations:
+                        if rec["movieId"] == str(rec_obj.movie_id) and rec["score"] == rec_obj.score:
+                            matching = True
 
                 self.assertFalse(matching)
         else:

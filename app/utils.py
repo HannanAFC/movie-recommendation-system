@@ -64,11 +64,12 @@ class FileDownloader:
            callback (Callable): the callback function to call when done with the filepath as the parameter.
         """
         self.progress_bar.start()
-        if type(progress_cb) == Callable:
+        if callable(progress_cb):
             response = urlretrieve(url, reporthook=progress_cb)
         else:
             response = urlretrieve(url, reporthook=self.update_progress)
-        self.progress_bar.finish()
+        if not callable(progress_cb):
+            self.progress_bar.finish()
         if after_download_cb != None:
             after_download_cb(response[0])
 

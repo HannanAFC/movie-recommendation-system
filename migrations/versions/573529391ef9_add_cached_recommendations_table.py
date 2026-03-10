@@ -25,7 +25,7 @@ def upgrade():
     sa.Column('movie_id', Encrypted(), nullable=False),
     sa.Column('score', sa.Float(), nullable=False),
     sa.Column('timestamp', sa.DateTime(), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['user.id'], "test_user_id" ),
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('cached_recommendation', schema=None) as batch_op:

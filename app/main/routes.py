@@ -25,8 +25,12 @@ def dashboard():
 @bp.route("/onboarding", methods=["GET", "POST"])
 @login_required
 def onboarding():
-    def download_callback(progress):
-        print(f"Download progress: {progress}%")
+    def download_callback(blocknum: int, blocksize: int, totalsize: int):
+        readed_data = blocknum * blocksize
+        if totalsize > 0:
+            download_percentage = readed_data * 100 / totalsize
+            if ( download_percentage <= 100 ):
+                print(f"Download progress: {download_percentage}%")
     if request.method == "POST":
         values = sanitise_form_inputs(request=request, fields=["dataset"])
         dataset = values["dataset"]

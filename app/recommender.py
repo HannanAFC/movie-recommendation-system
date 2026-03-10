@@ -246,6 +246,7 @@ class HybridRecommendationSystem:
         hybrid_scores = {}
         all_movie_ids = set(collab_scores.keys()).union(set(content_scores.keys()))
         user_ratings = len(user.get_user_ratings())
+        #Continuous Weighting, slowly introduces collaboritive when enough data is added.
         self.collab_weight = user_ratings / (user_ratings + self.K)
         self.content_weight = 1 - self.collab_weight
         

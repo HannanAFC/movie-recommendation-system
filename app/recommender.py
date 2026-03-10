@@ -214,7 +214,7 @@ class ContentRecommendationSystem:
     
 class HybridRecommendationSystem:
     
-    def __init__(self, movies: pd.DataFrame, ratings: pd.DataFrame, collab_weight: float = 0.6, content_weight: float = 0.4):
+    def __init__(self, movies: pd.DataFrame, ratings: pd.DataFrame, collab_weight: float = None, content_weight: float = None, K = 10):
         self.collab_weight = collab_weight
         self.content_weight = content_weight
 
@@ -225,7 +225,7 @@ class HybridRecommendationSystem:
 
         self.movies = movies
         self.ratings = ratings
-
+        self.K = K
     def recommend(self, user: User, top_n: int = 10) -> List[Dict[int, float]]:
         """
         Generate hybrid movie recommendations for a user.
@@ -245,7 +245,10 @@ class HybridRecommendationSystem:
         # Combine both
         hybrid_scores = {}
         all_movie_ids = set(collab_scores.keys()).union(set(content_scores.keys()))
-
+        user_ratings = len(user.get_user_ratings())
+        self.collab_weight = user_ratings / (user_ratings + self.K)
+        self.content_weight = 1 - self.collab_weight
+        
         for movie_id in all_movie_ids:
             collab_score = collab_scores.get(movie_id, 0)
             content_score = content_scores.get(movie_id, 0)

@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request, session
 from flask_login import login_user, logout_user, current_user
 from app.auth import bp
 from app.utils import sanitise_form_inputs
@@ -29,8 +29,10 @@ def login():
 
         if not user or not user.check_password(password=password):
             return redirect(url_for("auth.login"))
-
+        
+        dek = user.unlock_dek(password)
         login_user(user, remember=bool(remember_me))
+        session["dek"] = dek
         next_page = request.args.get("next")
         if not next_page or urlsplit(next_page).netloc != "":
             next_page = url_for("main.dashboard")

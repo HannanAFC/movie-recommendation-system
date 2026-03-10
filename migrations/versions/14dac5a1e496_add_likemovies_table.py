@@ -7,7 +7,7 @@ Create Date: 2026-03-05 12:33:04.925371
 """
 from alembic import op
 import sqlalchemy as sa
-from app.models import Encrypted, encryption_key
+from app.models import Encrypted
 
 
 # revision identifiers, used by Alembic.
@@ -22,7 +22,7 @@ def upgrade():
     op.create_table('liked_movie',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('movie_id', Encrypted(encryption_key=encryption_key), nullable=False),
+    sa.Column('movie_id', Encrypted(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )

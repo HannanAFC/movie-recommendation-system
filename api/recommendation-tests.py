@@ -12,7 +12,7 @@ import shutil
 import os
 from cryptography.fernet import Fernet
 
-test_dataset_location = "app/test_temp/"
+test_dataset_location = "api/app/test_temp/"
 local_filename = "test_dataset.zip"
 
 TEST_KEY = Fernet.generate_key()
@@ -21,12 +21,12 @@ class TestConfig(Config):
     Testing = True
     # Redirect SQLAlchemy to special in-memory database for tests
     SQLALCHEMY_DATABASE_URI = "sqlite://"
-    DATASETS_BASE = "app/test_datasets"
-    MOVIES_PATH = "app/test_datasets/movies.csv"
-    RATINGS_PATH = "app/test_datasets/ratings.csv"
-    LINKS_PATH = "app/test_datasets/links.csv"
-    TAGS_PATH = "app/test_datasets/tags.csv"
-    EXTRACTED_YEAR_PATH = "app/test_datasets/extracted_year.csv"
+    DATASETS_BASE = "api/app/test_datasets"
+    MOVIES_PATH = "api/app/test_datasets/movies.csv"
+    RATINGS_PATH = "api/app/test_datasets/ratings.csv"
+    LINKS_PATH = "api/app/test_datasets/links.csv"
+    TAGS_PATH = "api/app/test_datasets/tags.csv"
+    EXTRACTED_YEAR_PATH = "api/app/test_datasets/extracted_year.csv"
 
 class TestCollaborativeRecommendationSystem(unittest.TestCase):
     

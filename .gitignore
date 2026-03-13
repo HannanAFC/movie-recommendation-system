@@ -212,11 +212,11 @@ node_modules/
 
 .DS_Store
 
-app/datasets/*
+api/app/datasets/*
 
 .flaskenv
 
 *.db
 
-app/test_temp
-app/test_datasets
+api/app/test_temp
+api/app/test_datasets

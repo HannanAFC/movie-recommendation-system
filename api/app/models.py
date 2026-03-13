@@ -18,6 +18,35 @@ def get_encryption_key() -> bytes | None:
     from flask import g
     return getattr(g, "dek", None)
 
+class Encrypted(sa.TypeDecorator):
+    """
+    Encrypted data type for SQLAlchemy, used for storing the actual storing of tmdb_ids and rating_ids however in application use the data is unencrypted.
+    """
+    impl = sa.Text
+    cache_ok = True
+
+    def _get_fernet(self):
+        key = get_encryption_key()
+        if not key:
+            raise RuntimeError("User encryption key not loaded")
+        return Fernet(key)
+
+    def process_bind_param(self, value, dialect):
+
+        if value is None:
+            return None
+
+        f = self._get_fernet()
+        return f.encrypt(pickle.dumps(value)).decode()
+
+    def process_result_value(self, value, dialect):
+
+        if value is None:
+            return None
+
+        f = self._get_fernet()
+        return pickle.loads(f.decrypt(value.encode()))
+
 class User(UserMixin, db.Model):
     """
     User model for the application, inherits UserMixin to work properly with Flask and it's required methods and attributes.
@@ -29,6 +58,7 @@ class User(UserMixin, db.Model):
     id:                     Mapped[int]                              = mapped_column(primary_key=True)
     username:               Mapped[str]                              = mapped_column(sa.String(64), unique=True, index=True, nullable=False)
     email:                  Mapped[str]                              = mapped_column(sa.String(128), unique=True, index=True, nullable=False)
+    tmdb_api_key:           Mapped[str]                              = mapped_column(Encrypted(), nullable=True)
     password_hash:          Mapped[str]                              = mapped_column(sa.String(256), nullable=False)
     encrypted_dek:          Mapped[str]                              = mapped_column(sa.LargeBinary, nullable=False)
     dek_salt:               Mapped[str]                              = mapped_column(sa.LargeBinary, nullable=False)
@@ -178,35 +208,6 @@ class User(UserMixin, db.Model):
 @login.user_loader
 def load_user(id):
     return db.session.get(User, int(id))
-
-class Encrypted(sa.TypeDecorator):
-    """
-    Encrypted data type for SQLAlchemy, used for storing the actual storing of tmdb_ids and rating_ids however in application use the data is unencrypted.
-    """
-    impl = sa.Text
-    cache_ok = True
-
-    def _get_fernet(self):
-        key = get_encryption_key()
-        if not key:
-            raise RuntimeError("User encryption key not loaded")
-        return Fernet(key)
-
-    def process_bind_param(self, value, dialect):
-
-        if value is None:
-            return None
-
-        f = self._get_fernet()
-        return f.encrypt(pickle.dumps(value)).decode()
-
-    def process_result_value(self, value, dialect):
-
-        if value is None:
-            return None
-
-        f = self._get_fernet()
-        return pickle.loads(f.decrypt(value.encode()))
 
 class MovieRating(db.Model):
     """

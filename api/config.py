@@ -13,12 +13,12 @@ class Config():
         "production":  "https://files.grouplens.org/datasets/movielens/ml-32m.zip"
     }
     SELECTED_DATASET = "development"
-    DATASETS_BASE = "app/datasets/"
-    MOVIES_PATH = "app/datasets/movies.csv"
-    RATINGS_PATH = "app/datasets/ratings.csv"
-    LINKS_PATH = "app/datasets/links.csv"
-    TAGS_PATH = "app/datasets/tags.csv"
-    EXTRACTED_YEAR_PATH = "app/datasets/extracted_year.csv"
+    DATASETS_BASE = "api/app/datasets/"
+    MOVIES_PATH = "api/app/datasets/movies.csv"
+    RATINGS_PATH = "api/app/datasets/ratings.csv"
+    LINKS_PATH = "api/app/datasets/links.csv"
+    TAGS_PATH = "api/app/datasets/tags.csv"
+    EXTRACTED_YEAR_PATH = "api/app/datasets/extracted_year.csv"
     LANGUAGES = ["en"]
     MAIL_SERVER = os.environ.get("MAIL_SERVER")
     MAIL_PORT = int(os.environ.get("MAIL_PORT") or 25)

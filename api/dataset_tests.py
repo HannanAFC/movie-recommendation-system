@@ -10,12 +10,12 @@ local_filename = "test_dataset.zip"
 
 class TestConfig(Config):
     Testing = True
-    DATASETS_BASE = "app/test_datasets"
-    MOVIES_PATH = "app/test_datasets/movies.csv"
-    RATINGS_PATH = "app/test_datasets/ratings.csv"
-    LINKS_PATH = "app/test_datasets/links.csv"
-    TAGS_PATH = "app/test_datasets/tags.csv"
-    EXTRACTED_YEAR_PATH = "app/test_datasets/extracted_year.csv"
+    DATASETS_BASE = "api/app/test_datasets"
+    MOVIES_PATH = "api/app/test_datasets/movies.csv"
+    RATINGS_PATH = "api/app/test_datasets/ratings.csv"
+    LINKS_PATH = "api/app/test_datasets/links.csv"
+    TAGS_PATH = "api/app/test_datasets/tags.csv"
+    EXTRACTED_YEAR_PATH = "api/app/test_datasets/extracted_year.csv"
 
 class TestDatasetManager(unittest.TestCase):
 

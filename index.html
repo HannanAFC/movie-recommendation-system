@@ -1,13 +1,28 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>react-with-flask</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<html lang="en-GB">
+
+<head>
+
+	<meta charset="UTF-8" />
+	<link rel="icon" type="image/jpg" href="/favicon.jpg" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<base href="/">
+
+	<script>
+		document.documentElement.classList.toggle(
+			"dark",
+			localStorage.theme === "dark" ||
+			(!("theme" in localStorage) &&
+				window.matchMedia("(prefers-color-scheme: dark)").matches),
+			);
+	</script>
+
+</head>
+
+<body class="md:p-5 p-2 bg-white text-black dark:bg-neutral-900 dark:text-white duration-150 transition-[background-color,color]">
+	<noscript>You need to enable JavaScript to run this app.</noscript>
+	<div id="root"></div>
+	<script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

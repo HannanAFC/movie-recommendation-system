@@ -1,5 +1,5 @@
 from flask import request, session, jsonify
-from flask_jwt_extended import JWTManager, create_access_token
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from app.auth import bp
 from app.utils import sanitise_form_inputs
 from email.utils import parseaddr
@@ -9,22 +9,29 @@ import sqlalchemy as sa
 from app.auth.password_reset import send_password_reset_email
 
 @bp.route("/@me", methods=["GET"])
+@jwt_required()
 def get_current_user():
-    user_id = session.get("user_id")
+    user_identity = get_jwt_identity()
 
-    if not user_id:
+    if not user_identity:
         return jsonify({
             "error": "Unauthorised."
         })
     
-    user = User.query.filter_by(id=user_id).first()
+    user = User.query.filter_by(username=user_identity).first()
     access_token = create_access_token(identity=user.username)
-    return jsonify(access_token=access_token), 200
+    return jsonify({
+        "access_token": access_token,
+        "user": {
+            "username": user.username,
+            "email": user.email
+        }
+    }), 200
     
 
 @bp.route("/login", methods=["POST"])
 def login():
-    values = sanitise_form_inputs(request=request, fields=["username", "password", "remember_me"])
+    values = sanitise_form_inputs(request=request, fields=["username", "password"])
     username = values["username"]
     password = values["password"]
 
@@ -39,7 +46,6 @@ def login():
             "error": "Unauthorised."
         }), 401
     
-    session["user_id"] = user.id
     session["dek"] = user.unlock_dek(password=password)
 
     access_token = create_access_token(identity=username)

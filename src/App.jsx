@@ -15,14 +15,25 @@ export default function App( )
     {
         async function fetchUser( )
         {
-            const response = await axios.get("/api/auth/@me");
-            if ( response.data.error )
+            if ( sessionStorage.getItem("access_token") )
             {
-                setUser(null);
+                const response = await axios.get("/api/auth/@me", {
+                    headers: {
+                        Authorization: "Bearer " + sessionStorage.getItem( "access_token" )
+                    }
+                });
+                if ( response.data.error )
+                {
+                    setUser( null );
+                }
+                else
+                {
+                    setUser( response.data.user );
+                }
             }
             else
             {
-                setUser(response.data);
+                setUser( null );
             }
         }
 

@@ -16,7 +16,7 @@ login.login_message = "Login required to access this page."
 mail = Mail()
 dataset_manager = DatasetManager()
 cors = CORS()
-jwt = JWTManager()
+jwt_manager = JWTManager()
 
 def create_app(config_class=Config):
     # Initialise flask and get the settings from the config class
@@ -30,7 +30,7 @@ def create_app(config_class=Config):
     mail.init_app(app)
     dataset_manager.init_app(app)
     cors.init_app(app)
-    jwt.init_app(app)
+    jwt_manager.init_app(app)
 
     from app.auth import bp as auth_bp
     app.register_blueprint(auth_bp, url_prefix="/api/auth")

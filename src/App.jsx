@@ -15,25 +15,19 @@ export default function App( )
     {
         async function fetchUser( )
         {
-            if ( sessionStorage.getItem("access_token") )
+            const response = await axios.get(
+                "/api/auth/@me",
+            ).catch( ( error ) =>
             {
-                const response = await axios.get("/api/auth/@me", {
-                    headers: {
-                        Authorization: "Bearer " + sessionStorage.getItem( "access_token" )
-                    }
-                });
-                if ( response.data.error )
+                if ( error.response.status === 401 )
                 {
                     setUser( null );
                 }
-                else
-                {
-                    setUser( response.data.user );
-                }
-            }
-            else
+            } );
+
+            if ( response && response.data && response.data.user )
             {
-                setUser( null );
+                setUser( response.data.user );
             }
         }
 
@@ -43,7 +37,7 @@ export default function App( )
     return (
         <Routes>
             <Route index element={!user ? <HomePage /> : <Navigate to="/dashboard" replace={true} />} />
-            <Route path="/dashboard" element={user ? <DashboardPage user={user} /> : <Navigate to="/login" replace={true} />} />
+            <Route path="/dashboard" element={user ? <DashboardPage user={user} setUser={setUser} /> : <Navigate to="/login" replace={true} />} />
             <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/dashboard" replace={true} />} />
             <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/dashboard" replace={true} />} />
             <Route path="/reset-password" element={!user ? <ResetPasswordRequestPage /> : <Navigate to="/dashboard" replace={true} />} />

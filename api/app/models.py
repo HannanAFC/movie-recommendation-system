@@ -1,11 +1,11 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column, relationship, WriteOnlyMapped
-from flask import current_app, session
+from flask import current_app
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from cryptography.fernet import Fernet
 import jwt
-from app import db, login
+from app import db, jwt_manager
 from time import time
 import pickle
 from datetime import datetime, timezone
@@ -205,9 +205,14 @@ class User(UserMixin, db.Model):
             return
         return db.session.get(User, id)
     
-@login.user_loader
-def load_user(id):
-    return db.session.get(User, int(id))
+@jwt_manager.user_identity_loader
+def user_identity_lookup(user):
+    return user.username
+
+@jwt_manager.user_lookup_loader
+def user_lookup_callback(_jwt_header, jwt_data):
+    identity = jwt_data["sub"]
+    return User.query.filter_by(username=identity).first()
 
 class MovieRating(db.Model):
     """

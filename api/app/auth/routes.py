@@ -1,5 +1,5 @@
 from flask import request, session, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, jwt_required, current_user, get_jwt, set_access_cookies, get_jwt_identity, unset_jwt_cookies
 from app.auth import bp
 from app.utils import sanitise_form_inputs
 from email.utils import parseaddr
@@ -7,27 +7,33 @@ from app import db, current_app
 from app.models import User
 import sqlalchemy as sa
 from app.auth.password_reset import send_password_reset_email
+import datetime
+from datetime import timedelta, timezone
+
+@bp.after_request
+def refresh_expiring_jwts(response):
+    try:
+        exp_timestamp = get_jwt()["exp"]
+        now = datetime.now(timezone.utc)
+        target_timestamp = datetime.timestamp(now + timedelta(minutes=30))
+        if target_timestamp > exp_timestamp:
+            access_token = create_access_token(identity=get_jwt_identity())
+            set_access_cookies(response, access_token)
+        return response
+    except (RuntimeError, KeyError):
+        # Case where there is not a valid JWT. Just return the original response
+        return response
+
 
 @bp.route("/@me", methods=["GET"])
 @jwt_required()
-def get_current_user():
-    user_identity = get_jwt_identity()
-
-    if not user_identity:
-        return jsonify({
-            "error": "Unauthorised."
-        })
-    
-    user = User.query.filter_by(username=user_identity).first()
-    access_token = create_access_token(identity=user.username)
+def get_current_user():    
     return jsonify({
-        "access_token": access_token,
         "user": {
-            "username": user.username,
-            "email": user.email
+            "username": current_user.username,
+            "email": current_user.email
         }
     }), 200
-    
 
 @bp.route("/login", methods=["POST"])
 def login():
@@ -41,23 +47,26 @@ def login():
         }), 422
 
     user = User.query.filter_by(username=username).first()
-    if not user or not user.check_password(password):
+    if not user or type(user) != User or not user.check_password(password):
         return jsonify({
             "error": "Unauthorised."
         }), 401
     
     session["dek"] = user.unlock_dek(password=password)
 
-    access_token = create_access_token(identity=username)
-    return jsonify(access_token=access_token), 200
+    access_token = create_access_token(identity=user)
+    response = jsonify({"msg": "successful"})
+    set_access_cookies(response, access_token)
+    return response, 200
 
-@bp.route("/logout")
+@bp.route("/logout", methods=["GET"])
+@jwt_required()
 def logout():
-    if session.get("user_id"):
-        session.pop("user_id")
+    response = jsonify({"msg": "logout successful"})
+    unset_jwt_cookies(response)
     if session.get("dek"):
         session.pop("dek")
-    return "200"
+    return response, 200
 
 @bp.route("/register", methods=["POST"])
 def register():
@@ -87,7 +96,7 @@ def register():
         db.session.add(user)
         db.session.commit()
         
-        access_token = create_access_token(identity=username)
+        access_token = create_access_token(identity=user)
         return jsonify(access_token=access_token), 200
 
 @bp.route("/reset-password-request", methods=["POST"])

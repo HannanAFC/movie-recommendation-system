@@ -59,3 +59,30 @@ with patch("app.models.get_encryption_key") as mock_function:
     if (user != None):
         recommendations = crs.recommend(user=user)
         print("Number of recommendations:", len(recommendations))
+        
+    sns.histplot(ratings["rating"], bins=20)
+    plt.title("Ratings Distribution")
+    plt.xlabel("Rating")
+    plt.ylabel("Count")
+    plt.savefig("ratingDistribution.png")
+    
+    rec_df = pd.DataFrame(recommendations)
+
+    # Merge titles if missing
+    if "title" not in rec_df.columns:
+        rec_df = rec_df.merge(movies, on="movieId")
+
+    # Clean data
+    rec_df = rec_df.drop_duplicates(subset="movieId")
+
+    # ✅ DEFINE top_n HERE
+    top_n = rec_df.sort_values(by="score", ascending=False).head(10)
+
+    # ✅ THEN plot
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=top_n, x="score", y="title")
+
+    plt.title("Top 10 Recommended Movies")
+    plt.tight_layout()
+    
+    plt.savefig("topRecommendations.png")

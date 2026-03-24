@@ -1,27 +1,27 @@
 from flask import request, session, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, current_user, get_jwt, set_access_cookies, get_jwt_identity, unset_jwt_cookies
+from flask_jwt_extended import create_access_token, jwt_required, current_user, get_jwt, set_access_cookies, unset_jwt_cookies
 from app.auth import bp
 from app.utils import sanitise_form_inputs
 from email.utils import parseaddr
-from app import db, current_app
+from app import db
 from app.models import User
 import sqlalchemy as sa
 from app.auth.password_reset import send_password_reset_email
 import datetime
-from datetime import timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 @bp.after_request
 def refresh_expiring_jwts(response):
     try:
         exp_timestamp = get_jwt()["exp"]
-        now = datetime.now(timezone.utc)
+        now = datetime.now()
         target_timestamp = datetime.timestamp(now + timedelta(minutes=30))
         if target_timestamp > exp_timestamp:
-            access_token = create_access_token(identity=get_jwt_identity())
+            access_token = create_access_token(identity=current_user, expires_delta=timedelta(minutes=60))
             set_access_cookies(response, access_token)
         return response
     except (RuntimeError, KeyError):
-        # Case where there is not a valid JWT. Just return the original response
+        # No valid JWT
         return response
 
 
@@ -43,27 +43,27 @@ def login():
 
     if not all([username, password]):
         return jsonify({
-            "error": "Invalid details."
+            "error": f"Please enter a { "username" if not username else "password" }."
         }), 422
 
     user = User.query.filter_by(username=username).first()
     if not user or type(user) != User or not user.check_password(password):
         return jsonify({
-            "error": "Unauthorised."
+            "error": "Invalid username or password."
         }), 401
     
     session["dek"] = user.unlock_dek(password=password)
 
-    access_token = create_access_token(identity=user)
-    response = jsonify({"msg": "successful"})
-    set_access_cookies(response, access_token)
+    access_token = create_access_token(identity=user, expires_delta=timedelta(minutes=60))
+    response = jsonify({"message": "Login successful."})
+    set_access_cookies(response, access_token)  # Ensure cookies are set with httponly=True (default)
     return response, 200
 
 @bp.route("/logout", methods=["GET"])
 @jwt_required()
 def logout():
-    response = jsonify({"msg": "logout successful"})
-    unset_jwt_cookies(response)
+    response = jsonify({"message": "Logout successful."})
+    unset_jwt_cookies(response)  # Ensure cookies are unset properly
     if session.get("dek"):
         session.pop("dek")
     return response, 200
@@ -96,7 +96,7 @@ def register():
         db.session.add(user)
         db.session.commit()
         
-        access_token = create_access_token(identity=user)
+        access_token = create_access_token(identity=user, expires_delta=timedelta(minutes=60))
         return jsonify(access_token=access_token), 200
 
 @bp.route("/reset-password-request", methods=["POST"])

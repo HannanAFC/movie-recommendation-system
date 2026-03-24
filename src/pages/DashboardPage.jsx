@@ -8,13 +8,7 @@ export function DashboardPage({ user, setUser })
         async function sendLogoutRequest( )
         {
             const response = await axios.get(
-                "/api/auth/logout",
-                {
-                    headers:
-                    {
-                        Authorization: "Bearer " + sessionStorage.getItem( "access_token" )
-                    }
-                }
+                "/api/auth/logout"
             );
 
             if ( response.data.error )
@@ -23,7 +17,6 @@ export function DashboardPage({ user, setUser })
             }
             else
             {
-                sessionStorage.removeItem("access_token")
                 setUser( null );
             }
         }

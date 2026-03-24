@@ -20,24 +20,38 @@ export function LoginForm( )
     {
         async function login( formData )
         {
-            const response = await axios.postForm( "/api/auth/login", formData );
-            if ( response.data.error )
+            const response = await axios.postForm( "/api/auth/login", formData )
+            .catch( ( error ) =>
             {
-                alert( response.data.error );
-            }
-            else if ( response.data.access_token )
+                if ( error.response.status === 500 )
+                {
+                    alert( "Internal server error." );
+                }
+                else
+                {
+                    alert( error.response.data.error )
+                }
+            } );
+
+            if ( response && response.data )
             {
-                sessionStorage.setItem( "access_token", response.data.access_token );
                 window.location.href = "/dashboard";
             }
         }
 
         e.preventDefault( );
 
-        const formData = new FormData( );
-        formData.append( "username", username );
-        formData.append( "password", password );
-        login( formData );
+        if ( username && password )
+        {
+            const formData = new FormData( );
+            formData.append( "username", username );
+            formData.append( "password", password );
+            login( formData );
+        }
+        else
+        {
+            alert( `Please enter a ${ !username ? "username" : "password" }` );
+        }
     }
     
     return (

@@ -75,10 +75,9 @@ with patch("app.models.get_encryption_key") as mock_function:
     # Clean data
     rec_df = rec_df.drop_duplicates(subset="movieId")
 
-    # ✅ DEFINE top_n HERE
+
     top_n = rec_df.sort_values(by="score", ascending=False).head(10)
 
-    # ✅ THEN plot
     plt.figure(figsize=(10, 6))
     sns.barplot(data=top_n, x="score", y="title")
 
@@ -86,3 +85,15 @@ with patch("app.models.get_encryption_key") as mock_function:
     plt.tight_layout()
     
     plt.savefig("topRecommendations.png")
+    
+    
+    user_ratings = ratings[ratings["userId"] == user.id]
+
+    plt.figure(figsize=(8, 5))
+    sns.histplot(user_ratings["rating"], bins=10)
+
+    plt.title("User Rating Distribution")
+    plt.xlabel("Rating")
+    plt.ylabel("Count")
+    plt.tight_layout()
+    plt.savefig("userRatingBehaviour.png")

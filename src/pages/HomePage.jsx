@@ -6,12 +6,12 @@ export function HomePage( )
 {
     return (
         <>
-            <title>WatchWok | Get Started</title>
+            <title>WatchWok | Get started</title>
             
             <BasicHeader />
 
             <div className="md:min-h-[calc(100vh-112px)] flex flex-col md:grid grid-cols-2 gap-8 md:gap-2 items-center justify-center">
-                <div className="flex flex-col gap-4 md:p8 p-4 rounded-2xl dark:bg-willow-green-900 bg-willow-green-200 shadow-s">
+                <div className="flex flex-col gap-4 md:p8 p-4 rounded-md dark:bg-willow-green-900 bg-willow-green-200 shadow-s">
                     <h2 className="text-4xl md:text-5xl font-bold">
                         Find your next <span className="text-willow-green-500">big watch</span>
                     </h2>

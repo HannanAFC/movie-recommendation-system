@@ -97,7 +97,9 @@ def register():
         db.session.commit()
         
         access_token = create_access_token(identity=user, expires_delta=timedelta(minutes=60))
-        return jsonify(access_token=access_token), 200
+        response = jsonify({"message": "Registration successful."})
+        set_access_cookies(response, access_token)
+        return response, 200
 
 @bp.route("/reset-password-request", methods=["POST"])
 def reset_password_request():
@@ -109,9 +111,11 @@ def reset_password_request():
         )
         if user:
             send_password_reset_email(user)
-    return jsonify({
-        "message": "If an account exists with that email address, we have sent an email with instructions to reset your password."
-    })
+        return jsonify({
+            "message": "If an account exists with that email address, we have sent an email with instructions to reset your password."
+        })
+    else:
+        return jsonify({"message": "Please enter an email address."})
 
 @bp.route("/reset-password/<token>", methods=["POST"])
 def reset_password(token):
@@ -126,7 +130,7 @@ def reset_password(token):
             user.set_password(password=password)
             db.session.commit()
             return jsonify({
-                "message": "Password reset successful. You can now log in with your new password."
+                "message": "Password reset successful. You can now login with your new password."
             })
         
         else:

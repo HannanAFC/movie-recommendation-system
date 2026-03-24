@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { NotFoundPage } from './NotFoundPage';
 
-export function DashboardPage({ user, setUser })
+export function DashboardPage({ user })
 {
     function logout( )
     {
@@ -17,7 +17,7 @@ export function DashboardPage({ user, setUser })
             }
             else
             {
-                setUser( null );
+                window.location.href = "/";
             }
         }
 

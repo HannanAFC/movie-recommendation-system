@@ -15,7 +15,7 @@
 		"build": "vite build",
 		"lint": "eslint .",
 		"preview": "vite preview",
-		"api": "cd api && flask run",
+		"api": "python /workspaces/movie-recommendation-system/api/movie-recommendation-system.py",
 		"tailwind": "npx @tailwindcss/cli -i ./app/static/css/input.css -o ./app/static/css/output.css --watch",
 		"prettier": "npx prettier --write **/*.html"
 	},
@@ -26,6 +26,7 @@
 		"react": "^19.2.4",
 		"react-dom": "^19.2.4",
 		"react-router": "^7.13.1",
+		"socket.io-client": "^4.8.3",
 		"tailwindcss": "^4.2.1"
 	},
 	"devDependencies": {

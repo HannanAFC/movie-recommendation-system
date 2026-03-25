@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 import sqlalchemy.orm as so
-from app import create_app, db
+from app import create_app, db, socketio
 from app.models import User, MovieRating
 
 app = create_app()
@@ -15,3 +15,6 @@ def make_shell_context():
         "User": User,
         "MovieRatings": MovieRating
     }
+
+if __name__ == "__main__":
+    socketio.run(app, debug=True)

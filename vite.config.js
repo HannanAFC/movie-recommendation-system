@@ -13,5 +13,10 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:5000',
     },
+    hmr: {
+      host: "localhost",
+      protocol: "ws"
+    },
+    port: 5174
   },
 })

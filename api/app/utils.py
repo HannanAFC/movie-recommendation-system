@@ -5,7 +5,7 @@ from pandas import DataFrame
 import progressbar
 from urllib.request import urlretrieve
 from typing import Callable
-from os import path, mkdir, makedirs
+from os import path, mkdir, makedirs, listdir, curdir
 from zipfile import ZipFile
 import warnings
 import requests
@@ -63,10 +63,10 @@ class FileDownloader:
            url (str): the url to download from.
            callback (Callable): the callback function to call when done with the filepath as the parameter.
         """
-        self.progress_bar.start()
         if callable(progress_cb):
             response = urlretrieve(url, reporthook=progress_cb)
         else:
+            self.progress_bar.start()
             response = urlretrieve(url, reporthook=self.update_progress)
         if not callable(progress_cb):
             self.progress_bar.finish()
@@ -115,12 +115,24 @@ class DatasetManager:
         movies_exists = path.exists(self.movies_path)
         ratings_exists = path.exists(self.ratings_path)
         links_exists = path.exists(self.links_path)
+
         extracted_year_exists = path.exists(self.extracted_year_path)
+
+        datasets_exist = movies_exists and ratings_exists and links_exists
+
+        if not datasets_exist:
+            return False
 
         if not extracted_year_exists and self.movies != None:
             extract_year(self.movies, self.extracted_year_path)
 
-        return movies_exists and ratings_exists and links_exists
+        return False
+    
+    def downloadable_datasets(self) -> list[str]:
+        """
+        Return a list of identifiers for downloadable datasets.
+        """
+        return self.app.config["DATASET_URLS"]
     
     def download_dataset(self, url: str, progress_callback: Callable = None) -> None:
         """

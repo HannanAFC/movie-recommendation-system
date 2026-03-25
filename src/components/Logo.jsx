@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import LogoIcon from '../assets/icons/logo-nochopsticks.png'
+import LogoIcon from '../assets/icons/logo-nochopsticks.png';
 
 export function Logo( )
 {

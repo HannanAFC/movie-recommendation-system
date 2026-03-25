@@ -4,7 +4,7 @@ export function FormError({ error })
 
     return (
         <div className={className}>
-            <span className="p-2 flex flex-row items-center justify-center bg-red-500/10 border-red-500 border rounded-md transition-[height,opacity] text-red-500 text-sm" aria-label="Form error">
+            <span className="p-2 flex flex-row items-center justify-center bg-red-500/10 border-red-500 border rounded-md transition-[height,opacity] text-red-500 text-sm max-w-max" aria-label="Form error">
                 {error}
             </span>
         </div>

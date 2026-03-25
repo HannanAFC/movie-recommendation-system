@@ -61,6 +61,18 @@ files = [
 ]
 
 [[package]]
+name = "bidict"
+version = "0.23.1"
+description = "The bidirectional mapping library for Python."
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "bidict-0.23.1-py3-none-any.whl", hash = "sha256:5dae8d4d79b552a71cbabc7deb25dfe8ce710b17ff41711e13010ead2abfc3e5"},
+    {file = "bidict-0.23.1.tar.gz", hash = "sha256:03069d763bc387bbd20e7d49914e75fc4132a41937fa3405417e1a5a2d006d71"},
+]
+
+[[package]]
 name = "blinker"
 version = "1.9.0"
 description = "Fast, simple object-to-object and broadcast signaling"
@@ -406,6 +418,27 @@ test = ["certifi (>=2024)", "cryptography-vectors (==46.0.5)", "pretend (>=0.7)"
 test-randomorder = ["pytest-randomly"]
 
 [[package]]
+name = "dnspython"
+version = "2.8.0"
+description = "DNS toolkit"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "dnspython-2.8.0-py3-none-any.whl", hash = "sha256:01d9bbc4a2d76bf0db7c1f729812ded6d912bd318d3b1cf81d30c0f845dbf3af"},
+    {file = "dnspython-2.8.0.tar.gz", hash = "sha256:181d3c6996452cb1189c4046c61599b84a5a86e099562ffde77d26984ff26d0f"},
+]
+
+[package.extras]
+dev = ["black (>=25.1.0)", "coverage (>=7.0)", "flake8 (>=7)", "hypercorn (>=0.17.0)", "mypy (>=1.17)", "pylint (>=3)", "pytest (>=8.4)", "pytest-cov (>=6.2.0)", "quart-trio (>=0.12.0)", "sphinx (>=8.2.0)", "sphinx-rtd-theme (>=3.0.0)", "twine (>=6.1.0)", "wheel (>=0.45.0)"]
+dnssec = ["cryptography (>=45)"]
+doh = ["h2 (>=4.2.0)", "httpcore (>=1.0.0)", "httpx (>=0.28.0)"]
+doq = ["aioquic (>=1.2.0)"]
+idna = ["idna (>=3.10)"]
+trio = ["trio (>=0.30)"]
+wmi = ["wmi (>=1.5.1) ; platform_system == \"Windows\""]
+
+[[package]]
 name = "dotenv"
 version = "0.9.9"
 description = "Deprecated package"
@@ -418,6 +451,25 @@ files = [
 
 [package.dependencies]
 python-dotenv = "*"
+
+[[package]]
+name = "eventlet"
+version = "0.40.4"
+description = "Highly concurrent networking library"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "eventlet-0.40.4-py3-none-any.whl", hash = "sha256:6326c6d0bf55810bece151f7a5750207c610f389ba110ffd1541ed6e5215485b"},
+    {file = "eventlet-0.40.4.tar.gz", hash = "sha256:69bef712b1be18b4930df6f0c495d2a882bf7b63aa111e7b6eeff461cfcaf26f"},
+]
+
+[package.dependencies]
+dnspython = ">=1.15.0"
+greenlet = ">=1.0"
+
+[package.extras]
+dev = ["black", "build", "commitizen", "isort", "pip-tools", "pre-commit", "twine"]
 
 [[package]]
 name = "flask"
@@ -533,6 +585,30 @@ dev = ["flake8", "pytest", "tox"]
 docs = ["sphinx"]
 
 [[package]]
+name = "flask-socketio"
+version = "5.6.1"
+description = "Socket.IO integration for Flask applications"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "flask_socketio-5.6.1-py3-none-any.whl", hash = "sha256:51a3f71b28b4476c650829607e3a993e076034db6c3cc31f718f0a4b45939d42"},
+    {file = "flask_socketio-5.6.1.tar.gz", hash = "sha256:fe5bd995c3ed4da9a98f335d0d830fa1a19d84a64789f6265642a671fdacaeac"},
+]
+
+[package.dependencies]
+blinker = "*"
+click = "*"
+flask = ">=2.1.0"
+jinja2 = "*"
+python-socketio = ">=5.12.0"
+werkzeug = "*"
+
+[package.extras]
+dev = ["flask-login", "flask-session", "pytest", "pytest-cov", "redis", "tox"]
+docs = ["furo", "sphinx"]
+
+[[package]]
 name = "flask-sqlalchemy"
 version = "3.1.1"
 description = "Add SQLAlchemy support to your Flask application."
@@ -575,7 +651,6 @@ description = "Lightweight in-process concurrent programming"
 optional = false
 python-versions = ">=3.10"
 groups = ["main"]
-markers = "platform_machine == \"aarch64\" or platform_machine == \"ppc64le\" or platform_machine == \"x86_64\" or platform_machine == \"amd64\" or platform_machine == \"AMD64\" or platform_machine == \"win32\" or platform_machine == \"WIN32\""
 files = [
     {file = "greenlet-3.3.2-cp310-cp310-macosx_11_0_universal2.whl", hash = "sha256:9bc885b89709d901859cf95179ec9f6bb67a3d2bb1f0e88456461bd4b7f8fd0d"},
     {file = "greenlet-3.3.2-cp310-cp310-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:b568183cf65b94919be4438dc28416b234b678c608cafac8874dfeeb2a9bbe13"},
@@ -635,6 +710,18 @@ files = [
 [package.extras]
 docs = ["Sphinx", "furo"]
 test = ["objgraph", "psutil", "setuptools"]
+
+[[package]]
+name = "h11"
+version = "0.16.0"
+description = "A pure-Python, bring-your-own-I/O implementation of HTTP/1.1"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "h11-0.16.0-py3-none-any.whl", hash = "sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86"},
+    {file = "h11-0.16.0.tar.gz", hash = "sha256:4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1"},
+]
 
 [[package]]
 name = "idna"
@@ -1161,6 +1248,49 @@ files = [
 cli = ["click (>=5.0)"]
 
 [[package]]
+name = "python-engineio"
+version = "4.13.1"
+description = "Engine.IO server and client for Python"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "python_engineio-4.13.1-py3-none-any.whl", hash = "sha256:f32ad10589859c11053ad7d9bb3c9695cdf862113bfb0d20bc4d890198287399"},
+    {file = "python_engineio-4.13.1.tar.gz", hash = "sha256:0a853fcef52f5b345425d8c2b921ac85023a04dfcf75d7b74696c61e940fd066"},
+]
+
+[package.dependencies]
+simple-websocket = ">=0.10.0"
+
+[package.extras]
+asyncio-client = ["aiohttp (>=3.11)"]
+client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
+dev = ["tox"]
+docs = ["furo", "sphinx"]
+
+[[package]]
+name = "python-socketio"
+version = "5.16.1"
+description = "Socket.IO server and client for Python"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "python_socketio-5.16.1-py3-none-any.whl", hash = "sha256:a3eb1702e92aa2f2b5d3ba00261b61f062cce51f1cfb6900bf3ab4d1934d2d35"},
+    {file = "python_socketio-5.16.1.tar.gz", hash = "sha256:f863f98eacce81ceea2e742f6388e10ca3cdd0764be21d30d5196470edf5ea89"},
+]
+
+[package.dependencies]
+bidict = ">=0.21.0"
+python-engineio = ">=4.11.0"
+
+[package.extras]
+asyncio-client = ["aiohttp (>=3.4)"]
+client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
+dev = ["tox"]
+docs = ["furo", "sphinx"]
+
+[[package]]
 name = "requests"
 version = "2.32.5"
 description = "Python HTTP for Humans."
@@ -1322,6 +1452,25 @@ numpy = ">=1.26.4,<2.7"
 dev = ["click (<8.3.0)", "cython-lint (>=0.12.2)", "mypy (==1.10.0)", "pycodestyle", "ruff (>=0.12.0)", "spin", "types-psutil", "typing_extensions"]
 doc = ["intersphinx_registry", "jupyterlite-pyodide-kernel", "jupyterlite-sphinx (>=0.19.1)", "jupytext", "linkify-it-py", "matplotlib (>=3.5)", "myst-nb (>=1.2.0)", "numpydoc", "pooch", "pydata-sphinx-theme (>=0.15.2)", "sphinx (>=5.0.0,<8.2.0)", "sphinx-copybutton", "sphinx-design (>=0.4.0)", "tabulate"]
 test = ["Cython", "array-api-strict (>=2.3.1)", "asv", "gmpy2", "hypothesis (>=6.30)", "meson", "mpmath", "ninja ; sys_platform != \"emscripten\"", "pooch", "pytest (>=8.0.0)", "pytest-cov", "pytest-timeout", "pytest-xdist", "scikit-umfpack", "threadpoolctl"]
+
+[[package]]
+name = "simple-websocket"
+version = "1.1.0"
+description = "Simple WebSocket server and client for Python"
+optional = false
+python-versions = ">=3.6"
+groups = ["main"]
+files = [
+    {file = "simple_websocket-1.1.0-py3-none-any.whl", hash = "sha256:4af6069630a38ed6c561010f0e11a5bc0d4ca569b36306eb257cd9a192497c8c"},
+    {file = "simple_websocket-1.1.0.tar.gz", hash = "sha256:7939234e7aa067c534abdab3a9ed933ec9ce4691b0713c78acb195560aa52ae4"},
+]
+
+[package.dependencies]
+wsproto = "*"
+
+[package.extras]
+dev = ["flake8", "pytest", "pytest-cov", "tox"]
+docs = ["sphinx"]
 
 [[package]]
 name = "six"
@@ -1511,6 +1660,21 @@ markupsafe = ">=2.1.1"
 watchdog = ["watchdog (>=2.3)"]
 
 [[package]]
+name = "wsproto"
+version = "1.3.2"
+description = "Pure-Python WebSocket protocol implementation"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "wsproto-1.3.2-py3-none-any.whl", hash = "sha256:61eea322cdf56e8cc904bd3ad7573359a242ba65688716b0710a5eb12beab584"},
+    {file = "wsproto-1.3.2.tar.gz", hash = "sha256:b86885dcf294e15204919950f666e06ffc6c7c114ca900b060d6e16293528294"},
+]
+
+[package.dependencies]
+h11 = ">=0.16.0,<1"
+
+[[package]]
 name = "wtforms"
 version = "3.2.1"
 description = "Form validation and rendering for Python web development."
@@ -1531,4 +1695,4 @@ email = ["email-validator"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14,<4.0"
-content-hash = "16f8f149bc54f549907f4ddb7312f9a85ec8a7bceaecc610121a7a7d45ee6e7e"
+content-hash = "27450dfd9398186c950aa6338a46cbda786228b0a589785c4edd5a9a3d6f5000"

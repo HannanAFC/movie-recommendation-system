@@ -3,7 +3,7 @@ from flask_jwt_extended import create_access_token, jwt_required, current_user, 
 from app.auth import bp
 from app.utils import sanitise_form_inputs
 from email.utils import parseaddr
-from app import db
+from app import db, dataset_manager
 from app.models import User
 import sqlalchemy as sa
 from app.auth.password_reset import send_password_reset_email
@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 
 @bp.after_request
 def refresh_expiring_jwts(response):
+    print("Test")
     try:
         exp_timestamp = get_jwt()["exp"]
         now = datetime.now()
@@ -27,11 +28,15 @@ def refresh_expiring_jwts(response):
 
 @bp.route("/@me", methods=["GET"])
 @jwt_required()
-def get_current_user():    
+def get_current_user():
+    dataset_selected = dataset_manager.dataset_exists()
+    needs_to_select_movies = len(current_user.get_user_ratings()) == 0 and len(current_user.get_liked_movies()) < 5
     return jsonify({
         "user": {
             "username": current_user.username,
-            "email": current_user.email
+            "email": current_user.email,
+            "dataset_selected": dataset_selected,
+            "needs_to_select_movies": needs_to_select_movies
         }
     }), 200
 

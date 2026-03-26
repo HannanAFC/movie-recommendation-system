@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import axios from 'axios';
+import { getCookie } from './utils/getCookie';
 import { HomePage } from './pages/HomePage';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
@@ -23,6 +24,12 @@ export default function App( )
         {
             const response = await axios.get(
                 "/api/auth/@me",
+                {
+                    headers:
+                    {
+                        "X-CSRF-TOKEN": getCookie( "csrf_access_token" )
+                    }
+                }
             )
             .catch( ( error ) =>
             {
@@ -116,7 +123,7 @@ export default function App( )
                 {
                     user ?
                     (
-                        !datasetSelected ? <SelectDatasetPage /> : <Navigate to="/dashboard" replace={true} />
+                        !datasetSelected ? <SelectDatasetPage setDatasetSelected={setDatasetSelected} /> : <Navigate to="/dashboard" replace={true} />
                     ) : <Navigate to="/login" replace={true} />
                 }
             />

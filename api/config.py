@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from datetime import timedelta
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, ".flaskenv"))
@@ -20,7 +21,6 @@ class Config():
             "url":        "https://files.grouplens.org/datasets/movielens/ml-32m.zip"
         }
     ]
-    SELECTED_DATASET = "development"
     DATASETS_BASE = "api/app/datasets/"
     MOVIES_PATH = "api/app/datasets/movies.csv"
     RATINGS_PATH = "api/app/datasets/ratings.csv"
@@ -34,4 +34,9 @@ class Config():
     MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
     MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
     ADMINS = ["your-email@example.com"]
-    JWT_TOKEN_LOCATION = ["headers", "cookies"]
+    SOCKET_NAMESPACE = "/api/datasets-download-progress"
+    JWT_TOKEN_LOCATION = ["cookies"]
+    JWT_ACCESS_COOKIE_PATH = "/"
+    JWT_COOKIE_CSRF_PROTECT = False
+    JWT_ACCESS_COOKIE_NAME = "access_token_cookie"
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)

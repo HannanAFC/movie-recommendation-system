@@ -126,7 +126,7 @@ class DatasetManager:
         if not extracted_year_exists and self.movies != None:
             extract_year(self.movies, self.extracted_year_path)
 
-        return False
+        return True
     
     def downloadable_datasets(self) -> list[str]:
         """
@@ -138,10 +138,8 @@ class DatasetManager:
         """
         Download the dataset based on the environment variables.
         """
-        if not self.dataset_exists():
-            print("Downloading datasets from " + url)
-            if progress_callback:
-                self.file_downloader.download_file(url=url, after_download_cb=self.__parse_downloaded_dataset, progress_cb=progress_callback)
+        print("Downloading datasets from " + url)
+        self.file_downloader.download_file(url=url, after_download_cb=self.__parse_downloaded_dataset, progress_cb=progress_callback)
 
         self.validate_download()
 

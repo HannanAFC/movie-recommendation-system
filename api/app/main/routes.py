@@ -1,11 +1,9 @@
-# --- routes.py (FIXED) ---
-
 from flask import request, jsonify, current_app
 from flask_jwt_extended import jwt_required, current_user, verify_jwt_in_request, get_jwt_identity
 from app.main import bp
 from app.utils import sanitise_form_inputs
-from app import dataset_manager, socketio
-from flask_socketio import disconnect, join_room
+from app import dataset_manager, SOCKET_NAMESPACE, socketio
+import time
 
 @bp.route("/datasets-available", methods=["GET"])
 def get_available_datasets():
@@ -44,65 +42,30 @@ def select_dataset():
         return jsonify({"error": "Error selecting dataset."}), 500
 
     # Capture user_id BEFORE thread
-    user_id = current_user.id
-    print(f"=============UserID: {current_user.id}=============")
-
-    print
+    username = get_jwt_identity()
+    last_emit_time = time.time()
+    emit_interval = 0.25
 
     def progress_cb(blocknum: int, blocksize: int, totalsize: int):
+        nonlocal last_emit_time
         readed_data = blocknum * blocksize
         if totalsize > 0:
             download_percentage = min(readed_data * 100 / totalsize, 100)
-
-            socketio.emit(
-                'progress_update',
-                {
-                    'message': 'Downloading...',
-                    'download_percentage': download_percentage
-                },
-                namespace='/api/datasets-download-progress',
-                room=user_id
-            )
-            print(f"Download progress: {download_percentage}%")
-        else:
-            print("Download complete")
+            current_time = time.time()
+            if current_time - last_emit_time >= emit_interval:
+                socketio.emit('datasets_download_progress', {'data': f"Download progress: {download_percentage}%", "download_percentage": download_percentage}, namespace=SOCKET_NAMESPACE, to=f"user_{username}")
+                last_emit_time = current_time
+                socketio.sleep(0)
 
     def run_download():
+        socketio.emit("datasets_download_start",{"data": "Download starting"}, namespace=SOCKET_NAMESPACE, to=f"user_{username}")
+
+        socketio.sleep(0)
+
         dataset_manager.download_dataset(dataset_url, progress_cb)
-        print("Download complete")
+        socketio.emit("datasets_download_finish",{"data": "Download finished"}, namespace=SOCKET_NAMESPACE, to=f"user_{username}")
 
-        # Emit completion
-        socketio.emit(
-            'progress_complete',
-            {'message': 'Download complete', 'download_percentage': 100},
-            namespace='/api/datasets-download-progress',
-            room=user_id
-        )
 
-    from threading import Thread
-    Thread(target=run_download, daemon=True).start()
+    socketio.start_background_task(run_download)
 
     return jsonify({"message": "Dataset download started successfully."}), 200
-
-
-# --- SOCKET EVENTS ---
-
-@socketio.on('connect', namespace='/api/datasets-download-progress')
-def handle_connect():
-    try:
-        verify_jwt_in_request()
-    except Exception:
-        disconnect()
-        return
-    if not current_user:
-        disconnect()
-        return
-
-    # Join a room based on user_id
-    print(f"=============UserID: {current_user.id}=============")
-    join_room(current_user.id)
-
-
-@socketio.on('disconnect', namespace='/api/datasets-download-progress')
-def handle_disconnect():
-    pass

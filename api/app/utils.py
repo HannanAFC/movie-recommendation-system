@@ -11,7 +11,6 @@ from zipfile import ZipFile
 import warnings
 import requests
 import shutil
-from app.recommender import HybridRecommendationSystem
 
 def sanitise_form_inputs(request: Request, fields: list[str]) -> dict[str, str | None]:
     """
@@ -202,27 +201,43 @@ class DatasetManager:
         """
         return self.app.config["DATASET_URLS"]
 
-    def download_dataset(self, url: str, progress_callback: Callable = None) -> None:
+    def download_dataset(self, dataset_identifier: str, progress_callback: Callable = None) -> None:
         """
-        Download the dataset based on the environment variables.
+        Download the dataset based on the selected dataset identifier.
+        Parameters:
+            dataset_identifier (str): identifier of the dataset to download.
         """
+        dataset = next(
+            (dataset for dataset in self.app.config["DATASET_URLS"]
+            if dataset["identifier"] == dataset_identifier),
+            None
+        )
+
+        if dataset is None:
+            raise ValueError(f"Unknown dataset identifier: {dataset_identifier}")
+
+        url = dataset["url"]
+
         print("Downloading datasets from " + url)
         self.file_downloader.download_file(
             url=url,
-            after_download_cb=self.__parse_downloaded_dataset,
+            after_download_cb=lambda filepath: self.__parse_downloaded_dataset(
+                filepath,
+                dataset_identifier
+            ),
             progress_cb=progress_callback,
         )
 
         self.validate_download()
 
-    def __parse_downloaded_dataset(self, filepath: str) -> None:
+    def __parse_downloaded_dataset(self, filepath: str, dataset_identifier: str) -> None:
         """
         Callback for filedownloader to call after download finish.
         Parameters:
             filepath (str): filepath of the zipfile.
+            dataset_identifier (str): identifier of the dataset being extracted.
         """
         with ZipFile(filepath, "r") as zip_file:
-            write_current_dataset(zip_file.filename, self.app.config["CURRENT_DATASET_PATH"])
             for zip_info in zip_file.infolist():
                 if zip_info.is_dir():
                     continue
@@ -230,6 +245,7 @@ class DatasetManager:
                 if not path.exists(self.datasets_base):
                     mkdir(self.datasets_base)
                 zip_file.extract(zip_info, self.datasets_base)
+            write_current_dataset(dataset_identifier, self.app.config["CURRENT_DATASET_PATH"])
 
     def validate_download(self):
         try:

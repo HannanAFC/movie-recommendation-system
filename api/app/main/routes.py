@@ -33,12 +33,12 @@ def select_dataset():
     if not valid_dataset:
         return jsonify({"error": "Please select a valid dataset."}), 400
 
-    dataset_url = next(
-        (d["url"] for d in current_app.config["DATASET_URLS"] if d["identifier"] == dataset),
+    dataset_identifier = next(
+        (d["identifier"] for d in current_app.config["DATASET_URLS"] if d["identifier"] == dataset),
         None
     )
 
-    if not dataset_url:
+    if not dataset_identifier:
         return jsonify({"error": "Error selecting dataset."}), 500
 
     # Capture user_id BEFORE thread
@@ -62,7 +62,7 @@ def select_dataset():
 
         socketio.sleep(0)
 
-        dataset_manager.download_dataset(dataset_url, progress_cb)
+        dataset_manager.download_dataset(dataset_identifier, progress_cb)
         socketio.emit("datasets_download_finish",{"data": "Download finished"}, namespace=SOCKET_NAMESPACE, to=f"user_{username}")
 
 

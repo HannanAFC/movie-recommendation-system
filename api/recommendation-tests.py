@@ -59,6 +59,7 @@ class TestConfig(Config):
     PERSIST_COLLAB_MODEL = False
     AUTO_TRAIN_IF_MISSING = True
     SAVE_MODEL_AFTER_TRAIN = False
+    START_RECOMMENDER_ON_APP_START = False
 
 class RecommendationTestBase(unittest.TestCase):
     app = None

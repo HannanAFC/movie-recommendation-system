@@ -32,6 +32,7 @@ class Config():
     PERSIST_COLLAB_MODEL = True
     AUTO_TRAIN_IF_MISSING = False
     SAVE_MODEL_AFTER_TRAIN = True
+    START_RECOMMENDER_ON_APP_START = True
     LANGUAGES = ["en"]
     MAIL_SERVER = os.environ.get("MAIL_SERVER")
     MAIL_PORT = int(os.environ.get("MAIL_PORT") or 25)

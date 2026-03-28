@@ -1,4 +1,4 @@
-from flask import request, session, jsonify
+from flask import request, session, jsonify, current_app
 from flask_jwt_extended import create_access_token, jwt_required, current_user, get_jwt, set_access_cookies, unset_jwt_cookies
 from app.auth import bp
 from app.utils import sanitise_form_inputs
@@ -31,12 +31,20 @@ def refresh_expiring_jwts(response):
 def get_current_user():
     dataset_selected = dataset_manager.dataset_exists()
     needs_to_select_movies = len(current_user.get_user_ratings()) == 0 and len(current_user.get_liked_movies()) < 5
+
+    recommender_status = current_app.extensions.get("recommender_status", {
+        "is_ready": False,
+        "needs_manual_initialisation": False,
+        "status_message": "Recommender status is unavailable."
+    })
+
     return jsonify({
         "user": {
             "username": current_user.username,
             "email": current_user.email,
             "dataset_selected": dataset_selected,
-            "needs_to_select_movies": needs_to_select_movies
+            "needs_to_select_movies": needs_to_select_movies,
+            "recommender": recommender_status
         }
     }), 200
 

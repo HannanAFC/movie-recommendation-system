@@ -74,6 +74,49 @@ class CollaborativeRecommendationSystem:
         self.knn = None
         self._similar_movies_cache: Dict[Tuple[int, int], List[Tuple[int, float]]] = {}
 
+        self.is_ready = False
+        self.needs_manual_initialisation = False
+        self.status_message: str | None = None
+
+    def _set_status(
+        self,
+        is_ready: bool,
+        needs_manual_initialisation: bool,
+        status_message: str | None = None
+    ) -> None:
+        """
+        Updates the current status of the collaborative recommender so the application can determine whether it is ready.
+        Parameters:
+            is_ready (bool):                    whether the recommender is currently ready to be used.
+            needs_manual_initialisation (bool): whether the recommender requires manual initialisation before use.
+            status_message (str | None):        message describing the current status.
+        """
+        self.is_ready = is_ready
+        self.needs_manual_initialisation = needs_manual_initialisation
+        self.status_message = status_message
+
+    def mark_manual_initialisation_required(self, reason: str) -> None:
+        """
+        Marks the collaborative recommender as requiring manual initialisation.
+        Parameters:
+            reason (str): reason why the recommender could not be automatically initialised.
+        """
+        self._set_status(
+            is_ready=False,
+            needs_manual_initialisation=True,
+            status_message=reason
+        )
+
+    def get_status(self) -> dict:
+        """
+        Gets the current status of the collaborative recommender for use by the application or web UI.
+        """
+        return {
+            "is_ready": self.is_ready,
+            "needs_manual_initialisation": self.needs_manual_initialisation,
+            "status_message": self.status_message
+        }
+
     def _prune_ratings(self) -> None:
         """
         Removes ratings from users with number of ratings below min_user_ratings and removes movies with number of ratings below
@@ -166,6 +209,12 @@ class CollaborativeRecommendationSystem:
         )
 
         self.knn.fit(self.movie_factors)
+
+        self._set_status(
+            is_ready=True,
+            needs_manual_initialisation=False,
+            status_message="Collaborative recommender initialised successfully."
+        )
 
     def _build_model_metadata(self, dataset_id: str | None = None) -> dict:
         """
@@ -284,6 +333,12 @@ class CollaborativeRecommendationSystem:
         self.movie_user_matrix = None
         self.svd = None
         self._similar_movies_cache = {}
+
+        self._set_status(
+            is_ready=True,
+            needs_manual_initialisation=False,
+            status_message="Collaborative recommender model loaded successfully."
+        )
 
     @staticmethod
     def model_exists(model_path: str) -> bool:
@@ -545,28 +600,82 @@ class HybridRecommendationSystem:
         collab_dataset_id: str | None = None,
         persist_collab_model: bool = False,
         auto_train_if_missing: bool = True,
-        save_model_after_train: bool = True
+        save_model_after_train: bool = True,
+        allow_uninitialised: bool = False
     ):
         self.collab_weight = collab_weight
         self.content_weight = content_weight
+        self.collab_model_path = collab_model_path
+        self.collab_dataset_id = collab_dataset_id
+        self.persist_collab_model = persist_collab_model
+        self.auto_train_if_missing = auto_train_if_missing
+        self.save_model_after_train = save_model_after_train
+
+        self.is_ready = False
+        self.needs_manual_initialisation = False
+        self.status_message: str | None = None
 
         self.collab = CollaborativeRecommendationSystem(movies, ratings)
-
-        if collab_model_path is None:
-            self.collab.initialise()
-        else:
-            self.collab.initialise_from_storage(
-                model_path=collab_model_path,
-                dataset_id=collab_dataset_id,
-                persist_model=persist_collab_model,
-                auto_train_if_missing=auto_train_if_missing,
-                save_after_train=save_model_after_train
-            )
-
         self.content = ContentRecommendationSystem(movies, ratings)
 
         self.movies = movies
         self.ratings = ratings
+
+        try:
+            if collab_model_path is None:
+                self.collab.initialise()
+            else:
+                self.collab.initialise_from_storage(
+                    model_path=collab_model_path,
+                    dataset_id=collab_dataset_id,
+                    persist_model=persist_collab_model,
+                    auto_train_if_missing=auto_train_if_missing,
+                    save_after_train=save_model_after_train
+                )
+        except (FileNotFoundError, ValueError) as e:
+            if not allow_uninitialised:
+                raise
+
+            self.collab.mark_manual_initialisation_required(str(e))
+
+        self._sync_status_from_collab()
+    
+    def _sync_status_from_collab(self) -> None:
+        """
+        Synchronises the hybrid recommender status with the collaborative recommender status.
+        """
+        self.is_ready = self.collab.is_ready
+        self.needs_manual_initialisation = self.collab.needs_manual_initialisation
+        self.status_message = self.collab.status_message
+
+    def get_status(self) -> dict:
+        """
+        Gets the current status of the hybrid recommender for use by the application or web UI.
+        """
+        return {
+            "is_ready": self.is_ready,
+            "needs_manual_initialisation": self.needs_manual_initialisation,
+            "status_message": self.status_message
+        }
+
+    def manual_initialise(self) -> None:
+        """
+        Manually trains the collaborative part of the hybrid recommender and saves the model when configured.
+        Used when automatic initialisation was deferred at application startup.
+        """
+        self.collab.initialise()
+
+        if (
+            self.collab_model_path is not None and
+            self.persist_collab_model and
+            self.save_model_after_train
+        ):
+            self.collab.save_model(
+                model_path=self.collab_model_path,
+                dataset_id=self.collab_dataset_id
+            )
+
+        self._sync_status_from_collab()
 
     def _build_user_context(self, user: User) -> UserRecommendationContext:
         """
@@ -629,6 +738,12 @@ class HybridRecommendationSystem:
             candidate_n (int):    number of recommendations each system should return.
             cache_results (bool): whether to cache the recommendations as a set in the database.
         """
+                
+        if not self.is_ready:
+            raise RuntimeError(
+                self.status_message or "Recommender is not ready and requires manual initialisation."
+            )
+        
         context = self._build_user_context(user)
 
         collab_recs = self.collab.recommend_from_context(context, top_n=candidate_n)

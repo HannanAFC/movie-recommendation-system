@@ -84,7 +84,7 @@ def ensure_test_dataset(
         shutil.rmtree(datasets_base, ignore_errors=True)
         datasets_base.mkdir(parents=True, exist_ok=True)
 
-        dataset_manager._DatasetManager__parse_downloaded_dataset(str(archive_path))
+        dataset_manager._DatasetManager__parse_downloaded_dataset(str(archive_path), str(local_filename))
         dataset_manager.validate_download()
         marker_path = location / marker_filename
         marker_path.write_text(local_filename, encoding="utf-8")

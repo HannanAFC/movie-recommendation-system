@@ -40,3 +40,4 @@ class Config():
     JWT_COOKIE_CSRF_PROTECT = False
     JWT_ACCESS_COOKIE_NAME = "access_token_cookie"
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+    USE_SOCKETIO = True

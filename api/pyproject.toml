@@ -30,6 +30,7 @@ dependencies = [
     "flask-jwt-extended (>=4.7.1,<5.0.0)",
     "flask-socketio (>=5.6.1,<6.0.0)",
     "eventlet (>=0.40.4,<0.41.0)",
+    "psutil (>=7.2.2,<8.0.0)",
 ]
 
 [build-system]

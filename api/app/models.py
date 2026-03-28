@@ -1,5 +1,8 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column, relationship, WriteOnlyMapped
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
+import sqlite3
 from flask import current_app
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -12,6 +15,13 @@ from datetime import datetime, timezone
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 import base64
 import secrets
+
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    if isinstance(dbapi_connection, sqlite3.Connection):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON;")
+        cursor.close()
 
 def get_encryption_key() -> bytes | None:
     """Gets the encryption key from the flask session."""
@@ -64,7 +74,7 @@ class User(UserMixin, db.Model):
     dek_salt:               Mapped[str]                              = mapped_column(sa.LargeBinary, nullable=False)
     movie_ratings:          WriteOnlyMapped["MovieRating"]           = relationship(back_populates="rating_author")
     liked_movies:           WriteOnlyMapped["LikedMovie"]            = relationship(back_populates="rating_author")
-    recommendation_sets:    WriteOnlyMapped["RecommendationSet"]     = relationship(back_populates="user")
+    recommendation_sets:    WriteOnlyMapped["RecommendationSet"]     = relationship(back_populates="user", cascade="all, delete-orphan", passive_deletes=True)
 
     def __repr__(self):
         return f"<User\n\tid: {self.id}\n\tusername: {self.username}\n\temail: {self.email}\n>"
@@ -187,9 +197,15 @@ class User(UserMixin, db.Model):
         db.session.add_all(recommendation_objects)
         db.session.commit()
 
-        current_sets = db.session.scalars(sa.select(RecommendationSet).where(RecommendationSet.user == self).order_by(RecommendationSet.timestamp.desc()).limit(10)).all()
+        current_sets = db.session.scalars(
+            sa.select(RecommendationSet)
+            .where(RecommendationSet.user == self)
+            .order_by(RecommendationSet.timestamp.desc(), RecommendationSet.id.desc())
+        ).all()
+
         if len(current_sets) > 10:
-            db.session.delete(current_sets[0])
+            for old_set in current_sets[10:]:
+                db.session.delete(old_set)
             db.session.commit()
 
     @staticmethod
@@ -254,10 +270,10 @@ class RecommendationSet(db.Model):
         timestamp (datetime): when the set was generated.
     """
     id:                      Mapped[int]                             = mapped_column(primary_key=True)
-    user_id:                 Mapped[int]                             = mapped_column(sa.ForeignKey(User.id), index=True, nullable=False)
+    user_id:                 Mapped[int]                             = mapped_column(sa.ForeignKey(User.id, ondelete="CASCADE"), index=True, nullable=False)
     timestamp:               Mapped[datetime]                        = mapped_column(sa.DateTime, default=datetime.now(timezone.utc))
     user:                    Mapped[User]                            = relationship(back_populates="recommendation_sets")
-    cached_recommendations:  WriteOnlyMapped["CachedRecommendation"] = relationship(back_populates="user_set")
+    cached_recommendations:  WriteOnlyMapped["CachedRecommendation"] = relationship(back_populates="user_set", cascade="all, delete-orphan", passive_deletes=True)
 
     def __repr__(self):
         return f"<RecommendationSet\n\tid: {self.id}\n\tuser_id: {self.user_id}\n\ttimestamp: {self.timestamp}\n>"
@@ -271,7 +287,7 @@ class CachedRecommendation(db.Model):
         user_set (RecommendationSet): the set these recommendations belong to.
     """
     id:          Mapped[int]               = mapped_column(primary_key=True)
-    user_set_id: Mapped[int]               = mapped_column(sa.ForeignKey(RecommendationSet.id), index=True, nullable=False)
+    user_set_id: Mapped[int]               = mapped_column(sa.ForeignKey(RecommendationSet.id, ondelete="CASCADE"), index=True, nullable=False)
     movie_id:    Mapped[str]               = mapped_column(Encrypted(), nullable=False)
     score:       Mapped[float]             = mapped_column(nullable=False)
     user_set:    Mapped[RecommendationSet] = relationship(back_populates="cached_recommendations")

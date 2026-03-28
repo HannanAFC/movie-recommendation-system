@@ -32,13 +32,14 @@ def create_app(config_class=Config):
     mail.init_app(app)
     dataset_manager.init_app(app)
     jwt_manager.init_app(app)
-    socketio.init_app(
-        app,
-        cors_allowed_origins=["http://localhost:5001", "http://127.0.0.1:5001"],
-        cors_credentials=True,
-        logger=True,
-        engineio_logger=True
-    )
+    if ( app.config["USE_SOCKETIO"] == True ):
+        socketio.init_app(
+            app,
+            cors_allowed_origins=["http://localhost:5001", "http://127.0.0.1:5001"],
+            cors_credentials=True,
+            logger=True,
+            engineio_logger=True
+        )
 
     from app.auth import bp as auth_bp
     app.register_blueprint(auth_bp, url_prefix="/api/auth")

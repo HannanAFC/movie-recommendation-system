@@ -18,6 +18,7 @@ from app.recommender import (
 )
 from app.utils import ensure_test_dataset
 from config import Config
+from pathlib import Path
 
 TEST_DATASET_LOCATION = "api/app/test_temp/"
 
@@ -54,7 +55,10 @@ class TestConfig(Config):
     TAGS_PATH = "api/app/test_datasets/tags.csv"
     EXTRACTED_YEAR_PATH = "api/app/test_datasets/extracted_year.csv"
     USE_SOCKETIO = False
-
+    RECOMMENDER_MODEL_PATH = "api/app/test_temp/test_collab_model.joblib"
+    PERSIST_COLLAB_MODEL = False
+    AUTO_TRAIN_IF_MISSING = True
+    SAVE_MODEL_AFTER_TRAIN = False
 
 class RecommendationTestBase(unittest.TestCase):
     app = None
@@ -126,6 +130,14 @@ class RecommendationTestBase(unittest.TestCase):
             seen_movie_ids=seen_movie_ids,
             positive_rated_movie_ids=positive_rated_movie_ids,
         )
+    
+    def get_recommender_config(self) -> dict:
+        return {
+            "collab_model_path": self.app.config["RECOMMENDER_MODEL_PATH"],
+            "persist_collab_model": self.app.config["PERSIST_COLLAB_MODEL"],
+            "auto_train_if_missing": self.app.config["AUTO_TRAIN_IF_MISSING"],
+            "save_model_after_train": self.app.config["SAVE_MODEL_AFTER_TRAIN"],
+        }
     
     def assert_recommendation_shape(self, recommendations: list[dict], score_key: str) -> None:
         self.assertIsInstance(recommendations, list)
@@ -274,7 +286,6 @@ class TestCollaborativeRecommendationSystem(RecommendationTestBase):
         recommendations = recommender.recommend_from_context(context, top_n=10)
 
         self.assertLessEqual(len(recommendations), 10)
-        self.assertLessEqual(len(recommendations), 10)
         self.assertGreater(len(recommendations), 0)
         self.assert_recommendation_shape(recommendations, "similarity")
 
@@ -309,21 +320,36 @@ class TestContentRecommendationSystem(RecommendationTestBase):
         recommendations = recommender.recommend_from_context(context)
         self.assertEqual(recommendations, [])
 
-
 class LightweightHybridRecommendationSystem(HybridRecommendationSystem):
-    def __init__(self, movies: pd.DataFrame, ratings: pd.DataFrame, collab_weight: float = 0.6, content_weight: float = 0.4):
-        self.collab_weight = collab_weight
-        self.content_weight = content_weight
-        self.collab = CollaborativeRecommendationSystem(movies, ratings, **COLLAB_TEST_KWARGS)
-        self.collab.initialise()
-        self.content = ContentRecommendationSystem(movies, ratings)
-        self.movies = movies
-        self.ratings = ratings
-
+    def __init__(
+        self,
+        movies: pd.DataFrame,
+        ratings: pd.DataFrame,
+        collab_weight: float = 0.6,
+        content_weight: float = 0.4,
+        collab_model_path: str | None = None,
+        persist_collab_model: bool = False,
+        auto_train_if_missing: bool = True,
+        save_model_after_train: bool = False
+    ):
+        super().__init__(
+            movies=movies,
+            ratings=ratings,
+            collab_weight=collab_weight,
+            content_weight=content_weight,
+            collab_model_path=collab_model_path,
+            persist_collab_model=persist_collab_model,
+            auto_train_if_missing=auto_train_if_missing,
+            save_model_after_train=save_model_after_train
+        )
 
 class TestHybridRecommendationSystem(RecommendationTestBase):
     def build_recommender(self) -> HybridRecommendationSystem:
-        return LightweightHybridRecommendationSystem(self.movies, self.ratings)
+        return LightweightHybridRecommendationSystem(
+            self.movies,
+            self.ratings,
+            **self.get_recommender_config()
+        )
 
     def test_user_has_ratings(self):
         recommender = self.build_recommender()
@@ -362,7 +388,11 @@ class TestHybridRecommendationSystem(RecommendationTestBase):
 
 class TestMovieCaching(RecommendationTestBase):
     def build_recommender(self) -> HybridRecommendationSystem:
-        return LightweightHybridRecommendationSystem(self.movies, self.ratings)
+        return LightweightHybridRecommendationSystem(
+            self.movies,
+            self.ratings,
+            **self.get_recommender_config()
+        )
 
     def test_recommendations_are_written_to_cache(self):
         recommender = self.build_recommender()
@@ -456,6 +486,121 @@ class TestMovieCaching(RecommendationTestBase):
         ).all()
 
         self.assertEqual(len(remaining), 0)
+
+class TestCollaborativeModelPersistence(RecommendationTestBase):
+    def get_model_path(self) -> Path:
+        return Path(self.app.config["RECOMMENDER_MODEL_PATH"])
+
+    def tearDown(self):
+        model_path = self.get_model_path()
+        if model_path.exists():
+            model_path.unlink()
+        super().tearDown()
+
+    def test_can_save_and_load_collaborative_model(self):
+        model_path = self.get_model_path()
+
+        recommender = CollaborativeRecommendationSystem(
+            movies=self.movies,
+            ratings=self.ratings,
+            **COLLAB_TEST_KWARGS,
+        )
+        recommender.initialise()
+        recommender.save_model(str(model_path))
+
+        self.assertTrue(model_path.exists())
+
+        loaded_recommender = CollaborativeRecommendationSystem(
+            movies=self.movies,
+            ratings=None,
+            **COLLAB_TEST_KWARGS,
+        )
+        loaded_recommender.load_model(str(model_path))
+
+        self.assertIsNotNone(loaded_recommender.movie_factors)
+        self.assertIsNotNone(loaded_recommender.knn)
+        self.assertGreater(len(loaded_recommender.movie_id_to_idx), 0)
+        self.assertGreater(len(loaded_recommender.idx_to_movie_id), 0)
+
+    def test_initialise_from_storage_trains_and_saves_when_missing(self):
+        model_path = self.get_model_path()
+        if model_path.exists():
+            model_path.unlink()
+
+        recommender = CollaborativeRecommendationSystem(
+            movies=self.movies,
+            ratings=self.ratings,
+            **COLLAB_TEST_KWARGS,
+        )
+        recommender.initialise_from_storage(
+            model_path=str(model_path),
+            persist_model=True,
+            auto_train_if_missing=True,
+            save_after_train=True
+        )
+
+        self.assertTrue(model_path.exists())
+        self.assertIsNotNone(recommender.movie_factors)
+        self.assertIsNotNone(recommender.knn)
+
+    def test_initialise_from_storage_loads_existing_model(self):
+        model_path = self.get_model_path()
+
+        original = CollaborativeRecommendationSystem(
+            movies=self.movies,
+            ratings=self.ratings,
+            **COLLAB_TEST_KWARGS,
+        )
+        original.initialise()
+        original.save_model(str(model_path))
+
+        loaded = CollaborativeRecommendationSystem(
+            movies=self.movies,
+            ratings=None,
+            **COLLAB_TEST_KWARGS,
+        )
+        loaded.initialise_from_storage(
+            model_path=str(model_path),
+            persist_model=True,
+            auto_train_if_missing=False,
+            save_after_train=False
+        )
+
+        self.assertIsNotNone(loaded.movie_factors)
+        self.assertIsNotNone(loaded.knn)
+        self.assertEqual(set(original.movie_id_to_idx.keys()), set(loaded.movie_id_to_idx.keys()))
+
+class TestHybridRecommendationSystemPersistence(RecommendationTestBase):
+    def get_model_path(self) -> Path:
+        return Path(self.app.config["RECOMMENDER_MODEL_PATH"])
+
+    def tearDown(self):
+        model_path = self.get_model_path()
+        if model_path.exists():
+            model_path.unlink()
+        super().tearDown()
+
+    def test_hybrid_can_use_saved_collaborative_model(self):
+        model_path = self.get_model_path()
+
+        trainer = CollaborativeRecommendationSystem(
+            movies=self.movies,
+            ratings=self.ratings
+        )
+        trainer.initialise()
+        trainer.save_model(str(model_path))
+
+        recommender = LightweightHybridRecommendationSystem(
+            self.movies,
+            self.ratings,
+            collab_model_path=str(model_path),
+            persist_collab_model=True,
+            auto_train_if_missing=False,
+            save_model_after_train=False
+        )
+
+        self.assertIsNotNone(recommender.collab.movie_factors)
+        self.assertIsNotNone(recommender.collab.knn)
 
 if __name__ == "__main__":
     unittest.main()

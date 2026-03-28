@@ -27,6 +27,11 @@ class Config():
     LINKS_PATH = "api/app/datasets/links.csv"
     TAGS_PATH = "api/app/datasets/tags.csv"
     EXTRACTED_YEAR_PATH = "api/app/datasets/extracted_year.csv"
+    CURRENT_DATASET_PATH = "api/app/datasets/current_dataset.txt"
+    RECOMMENDER_MODEL_PATH = "api/models/collab_model.joblib"
+    PERSIST_COLLAB_MODEL = True
+    AUTO_TRAIN_IF_MISSING = False
+    SAVE_MODEL_AFTER_TRAIN = True
     LANGUAGES = ["en"]
     MAIL_SERVER = os.environ.get("MAIL_SERVER")
     MAIL_PORT = int(os.environ.get("MAIL_PORT") or 25)

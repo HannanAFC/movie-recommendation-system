@@ -8,6 +8,8 @@ from typing import List, Tuple, Dict
 from app.models import User
 from scipy.sparse import csr_matrix
 from dataclasses import dataclass
+from pathlib import Path
+import joblib
 
 @dataclass(frozen=True)
 class UserRecommendationContext:
@@ -36,18 +38,18 @@ class CollaborativeRecommendationSystem:
     def __init__(
         self,
         movies: pd.DataFrame,
-        ratings: pd.DataFrame,
+        ratings: pd.DataFrame | None = None,
         min_user_ratings: int = 50,
         min_movie_ratings: int = 50,
         n_components: int = 64,
         n_neighbors: int = 20,
         random_state: int = 42
     ):
-        if movies.empty or ratings.empty:
-            raise ValueError("Movies and ratings dataframes must contain data.")
+        if movies.empty:
+            raise ValueError("Movies dataframe must contain data.")
 
         self.movies = movies.copy()
-        self.ratings = ratings.copy()
+        self.ratings = ratings.copy() if ratings is not None else None
 
         self.min_user_ratings = min_user_ratings
         self.min_movie_ratings = min_movie_ratings
@@ -70,6 +72,7 @@ class CollaborativeRecommendationSystem:
 
         self.svd = None
         self.knn = None
+        self._similar_movies_cache: Dict[Tuple[int, int], List[Tuple[int, float]]] = {}
 
     def _prune_ratings(self) -> None:
         """
@@ -77,6 +80,9 @@ class CollaborativeRecommendationSystem:
         min_movie_ratings. The higher the number, the more that is removed so the quicker training is, however accuracy will be
         reduced. Increasing this number does the opposite.
         """
+        if self.ratings is None:
+            raise ValueError("Ratings dataframe is required to train the model.")
+
         ratings = self.ratings.copy()
 
         # Normalise types early
@@ -105,6 +111,9 @@ class CollaborativeRecommendationSystem:
         """
         Builds the movie id to index mappings, and applies conversions for perfomance.
         """
+        if self.ratings is None:
+            raise ValueError("Ratings dataframe is required to prepare the model.")
+
         movie_ids = self.ratings["movieId"].astype("category")
         user_ids = self.ratings["userId"].astype("category")
 
@@ -123,13 +132,15 @@ class CollaborativeRecommendationSystem:
         data = self.ratings["rating"].astype("float32").to_numpy()
 
         self.movie_user_matrix = csr_matrix((data, (row, col)))
-
-        self._similar_movies_cache: Dict[Tuple[int, int], List[Tuple[int, float]]] = {}
+        self._similar_movies_cache = {}
 
     def initialise(self) -> None:
         """
         Prunes data, prepares the data, applies dimensionality reduction and lastly, trains the KNN algorithm.
         """
+        if self.ratings is None or self.ratings.empty:
+            raise ValueError("Ratings dataframe is required to train the model.")
+
         self._prune_ratings()
         self.__prepare()
 
@@ -146,7 +157,7 @@ class CollaborativeRecommendationSystem:
         )
 
         # Dense latent movie vectors: shape = (n_movies, n_components)
-        self.movie_factors = self.svd.fit_transform(self.movie_user_matrix)
+        self.movie_factors = self.svd.fit_transform(self.movie_user_matrix).astype(np.float32)
 
         self.knn = NearestNeighbors(
             metric="cosine",
@@ -155,6 +166,170 @@ class CollaborativeRecommendationSystem:
         )
 
         self.knn.fit(self.movie_factors)
+
+    def _build_model_metadata(self, dataset_id: str | None = None) -> dict:
+        """
+        Builds the metadata used to determine whether a saved model matches the current recommender configuration.
+        Parameters:
+            dataset_id (str | None): identifier for the dataset being used, e.g. zip filename or dataset name.
+        """
+        return {
+            "dataset_id": dataset_id,
+            "min_user_ratings": self.min_user_ratings,
+            "min_movie_ratings": self.min_movie_ratings,
+            "n_components": self.n_components,
+            "n_neighbors": self.n_neighbors,
+            "random_state": self.random_state,
+        }
+    
+    def model_is_compatible(self, model_path: str, dataset_id: str | None = None) -> bool:
+        """
+        Checks whether a saved collaborative model matches the current recommender configuration.
+        Parameters:
+            model_path (str):        local path of the saved model to validate.
+            dataset_id (str | None): identifier for the dataset expected by the current application run.
+        """
+        path = Path(model_path)
+        if not path.exists():
+            return False
+
+        model_data = joblib.load(path)
+        saved_metadata = model_data.get("metadata")
+
+        if saved_metadata is None:
+            return False
+
+        expected_metadata = self._build_model_metadata(dataset_id)
+        return saved_metadata == expected_metadata
+    
+    def get_model_mismatch_reason(self, model_path: str, dataset_id: str | None = None) -> str | None:
+        """
+        Returns the reason a saved model does not match the current recommender configuration.
+        Parameters:
+            model_path (str):        local path of the saved model to validate.
+            dataset_id (str | None): identifier for the dataset expected by the current application run.
+        """
+        path = Path(model_path)
+        if not path.exists():
+            return "Model file does not exist."
+
+        model_data = joblib.load(path)
+        saved_metadata = model_data.get("metadata")
+        if saved_metadata is None:
+            return "Saved model metadata is missing."
+
+        expected_metadata = self._build_model_metadata(dataset_id)
+
+        for key, expected_value in expected_metadata.items():
+            if saved_metadata.get(key) != expected_value:
+                return f"Saved model metadata mismatch for '{key}'."
+
+        return None
+
+    def save_model(self, model_path: str, dataset_id: str | None = None) -> None:
+        """
+        Saves the trained collaborative model locally so it can be loaded later instead of retraining.
+        Parameters:
+            model_path (str):        local path to save the trained model to.
+            dataset_id (str | None): identifier for the dataset used to train the model.
+        """
+        if self.movie_factors is None or self.knn is None:
+            raise ValueError("Model must be trained before it can be saved.")
+
+        model_data = {
+            "movie_factors": self.movie_factors,
+            "movie_id_to_idx": self.movie_id_to_idx,
+            "idx_to_movie_id": self.idx_to_movie_id,
+            "n_neighbors": self.n_neighbors,
+            "min_user_ratings": self.min_user_ratings,
+            "min_movie_ratings": self.min_movie_ratings,
+            "n_components": self.n_components,
+            "random_state": self.random_state,
+            "knn": self.knn,
+            "metadata": self._build_model_metadata(dataset_id)
+        }
+
+        path = Path(model_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Use temp path whilst saving creating the model so that if it fails, a partially saved model isn't present,
+        # which would cause issues as the system would try to load it.
+        temp_path = path.with_suffix(path.suffix + ".tmp")
+        joblib.dump(model_data, temp_path)
+        temp_path.replace(path)
+
+    def load_model(self, model_path: str) -> None:
+        """
+        Loads a previously saved collaborative model from local storage.
+        Parameters:
+            model_path (str): local path to load the trained model from.
+        """
+        path = Path(model_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Collaborative model not found at {model_path}")
+
+        model_data = joblib.load(path)
+
+        self.movie_factors = model_data["movie_factors"]
+        self.movie_id_to_idx = model_data["movie_id_to_idx"]
+        self.idx_to_movie_id = model_data["idx_to_movie_id"]
+        self.knn = model_data["knn"]
+
+        self.n_neighbors = model_data.get("n_neighbors", self.n_neighbors)
+        self.min_user_ratings = model_data.get("min_user_ratings", self.min_user_ratings)
+        self.min_movie_ratings = model_data.get("min_movie_ratings", self.min_movie_ratings)
+        self.n_components = model_data.get("n_components", self.n_components)
+        self.random_state = model_data.get("random_state", self.random_state)
+
+        self.movie_user_matrix = None
+        self.svd = None
+        self._similar_movies_cache = {}
+
+    @staticmethod
+    def model_exists(model_path: str) -> bool:
+        """
+        Checks whether a saved collaborative model exists at the given local path.
+        Parameters:
+            model_path (str): local path to check for a saved model.
+        """
+        return Path(model_path).exists()
+
+    def initialise_from_storage(
+        self,
+        model_path: str,
+        dataset_id: str | None = None,
+        persist_model: bool = True,
+        auto_train_if_missing: bool = True,
+        save_after_train: bool = True
+    ) -> None:
+        """
+        Loads a saved collaborative model when available, otherwise optionally trains and saves a new one.
+        Parameters:
+            model_path (str):             local path to load/save the trained model.
+            dataset_id (str | None):      identifier for the dataset expected by the current application run.
+            persist_model (bool):         whether local model persistence should be used.
+            auto_train_if_missing (bool): whether the model should be trained if no saved model is found or is incompatible.
+            save_after_train (bool):      whether a newly trained model should be saved locally.
+        """
+        if persist_model and self.model_exists(model_path):
+            if self.model_is_compatible(model_path, dataset_id):
+                self.load_model(model_path)
+                return
+            else:
+                warnings.warn(self.get_model_mismatch_reason(model_path, dataset_id))
+
+            if not auto_train_if_missing:
+                raise ValueError(
+                    f"Collaborative model at {model_path} does not match the current dataset/configuration."
+                )
+
+        elif not auto_train_if_missing:
+            raise FileNotFoundError(f"Collaborative model not found at {model_path}")
+
+        self.initialise()
+
+        if persist_model and save_after_train:
+            self.save_model(model_path, dataset_id=dataset_id)
 
     def get_similar_movies(self, movie_id: int, n: int = 10) -> List[Tuple[int, float]]:
         """
@@ -350,7 +525,6 @@ class ContentRecommendationSystem:
 
         return results
 
-    
 class HybridRecommendationSystem:
     """
     Hybrid recommendation system, acts an interface for the recommendation system, should be used rather than directly interacting with the indivdual
@@ -366,13 +540,28 @@ class HybridRecommendationSystem:
         movies: pd.DataFrame,
         ratings: pd.DataFrame,
         collab_weight: float = 0.6,
-        content_weight: float = 0.4
+        content_weight: float = 0.4,
+        collab_model_path: str | None = None,
+        collab_dataset_id: str | None = None,
+        persist_collab_model: bool = False,
+        auto_train_if_missing: bool = True,
+        save_model_after_train: bool = True
     ):
         self.collab_weight = collab_weight
         self.content_weight = content_weight
 
         self.collab = CollaborativeRecommendationSystem(movies, ratings)
-        self.collab.initialise()
+
+        if collab_model_path is None:
+            self.collab.initialise()
+        else:
+            self.collab.initialise_from_storage(
+                model_path=collab_model_path,
+                dataset_id=collab_dataset_id,
+                persist_model=persist_collab_model,
+                auto_train_if_missing=auto_train_if_missing,
+                save_after_train=save_model_after_train
+            )
 
         self.content = ContentRecommendationSystem(movies, ratings)
 

@@ -6,7 +6,11 @@ description: Movie Recommendation System
 This is a React + Flask app, the frontend is built using React and Vite whilst the backend is build using Flask. The application runs entirely locally on the users device. The role of the app is to generate movie recommendations for users. A user can register an account or login. They have to supply movie they like during onboarding which is then saved to a sqlite database. The app will use this information to make predictions about what movies the user might enjoy.
 
 # Project Structure
-All backend code is stored in the API folder, this is where the flask app lives.  The rest is frontend related code. Componenets are in src/components and pages are in src/pages.
+This is how the project is structured:
+- All backend code in `/api`
+- API endpoints are in `/api/app/main` and `/api/app/auth`
+- For the frontend, components are in `src/components`
+- Pages that are on the page are in `src/pages`
 
 # Coding standards
 For JavaScript, we write in everything like this:

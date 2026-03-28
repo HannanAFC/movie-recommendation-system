@@ -1,18 +1,17 @@
 from nh3 import clean
 from flask import Flask, Request
-import json
 import pandas as pd
 from pandas import DataFrame
 import progressbar
 from urllib.request import urlretrieve
 from typing import Callable
-from os import path, mkdir, makedirs, listdir, curdir
+from os import path, mkdir
 from pathlib import Path
 from zipfile import ZipFile
 import warnings
 import requests
 import shutil
-
+from app.recommender import HybridRecommendationSystem
 
 def sanitise_form_inputs(request: Request, fields: list[str]) -> dict[str, str | None]:
     """
@@ -62,7 +61,6 @@ def prepare_test_environment(url: str, test_dataset_location: str, local_filenam
 
     return str(archive_path)
 
-
 def ensure_test_dataset(
     dataset_manager,
     dataset_url: str,
@@ -77,12 +75,7 @@ def ensure_test_dataset(
         prepare_test_environment(dataset_url, test_dataset_location, local_filename)
     )
 
-    marker_path = location / marker_filename
-    current_dataset = (
-        marker_path.read_text(encoding="utf-8").strip()
-        if marker_path.exists()
-        else None
-    )
+    current_dataset = read_current_dataset(test_dataset_location + "/" + marker_filename)
 
     extracted_files_exist = dataset_manager.dataset_exists()
     dataset_matches = current_dataset == local_filename
@@ -94,9 +87,33 @@ def ensure_test_dataset(
 
         dataset_manager._DatasetManager__parse_downloaded_dataset(str(archive_path))
         dataset_manager.validate_download()
+        marker_path = location / marker_filename
         marker_path.write_text(local_filename, encoding="utf-8")
 
     return str(archive_path)
+
+def write_current_dataset(dataset_id: str, marker_path: str) -> None:
+    """
+    Write the identifier of the current dataset to local storage.
+    Parameters:
+        dataset_id (str):  identifier of the dataset currently installed.
+        marker_path (str): local path to the dataset marker file.
+    """
+    path = Path(marker_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(dataset_id, encoding="utf-8")
+
+
+def read_current_dataset(marker_path: str) -> str | None:
+    """
+    Read the identifier of the current dataset from local storage.
+    Parameters:
+        marker_path (str): local path to the dataset marker file.
+    """
+    path = Path(marker_path)
+    if not path.exists():
+        return None
+    return path.read_text(encoding="utf-8").strip() or None
 
 class FileDownloader:
     """
@@ -205,6 +222,7 @@ class DatasetManager:
             filepath (str): filepath of the zipfile.
         """
         with ZipFile(filepath, "r") as zip_file:
+            write_current_dataset(zip_file.filename, self.app.config["CURRENT_DATASET_PATH"])
             for zip_info in zip_file.infolist():
                 if zip_info.is_dir():
                     continue

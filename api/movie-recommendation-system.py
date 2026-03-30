@@ -1,7 +1,8 @@
 import sqlalchemy as sa
 import sqlalchemy.orm as so
-from app import create_app, db, socketio
+from app import create_app
 from app.models import User, MovieRating
+from app.extensions import db, socketio
 
 app = create_app()
 

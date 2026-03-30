@@ -2,8 +2,50 @@ from flask import request, jsonify, current_app
 from flask_jwt_extended import jwt_required, current_user, verify_jwt_in_request, get_jwt_identity
 from app.main import bp
 from app.utils import sanitise_form_inputs
-from app import dataset_manager, SOCKET_NAMESPACE, socketio
+from app import dataset_manager, SOCKET_NAMESPACE, socketio, db
+from app import tmdb_service
 import time
+from datetime import datetime, timezone
+
+@bp.route("/tmdb-api-key", methods=["POST"])
+@jwt_required()
+def set_tmdb_api_key():
+    values = sanitise_form_inputs(request=request, fields=["api_key"])
+    api_key = values["api_key"]
+
+    if not api_key:
+        return jsonify({
+            "error": "Please enter a TMDB API key."
+            }), 422
+
+    is_valid = tmdb_service.validate_api_key(api_key)
+
+    if not is_valid:
+        current_user.tmdb_api_key_valid = False
+        db.session.commit()
+        return jsonify({
+            "error": "Invalid TMDB API key."
+            }), 422
+
+    current_user.tmdb_api_key = api_key
+    current_user.tmdb_api_key_valid = True
+    current_user.tmdb_api_key_last_validated_at = datetime.now(timezone.utc)
+    db.session.commit()
+
+    tmdb_status = {
+        "api_key_set": current_user.tmdb_api_key is not None,
+        "api_key_valid": current_user.tmdb_api_key_valid,
+        "api_key_last_validated_at": (
+            current_user.tmdb_api_key_last_validated_at.isoformat()
+            if current_user.tmdb_api_key_last_validated_at is not None
+            else None
+        )
+    }
+
+    return jsonify({
+        "message": "TMDB API key saved successfully.",
+        "tmdb": tmdb_status
+        }), 200
 
 @bp.route("/datasets-available", methods=["GET"])
 def get_available_datasets():

@@ -220,5 +220,6 @@ api/app/datasets/*
 
 api/app/test_temp
 api/app/test_datasets
+*.joblib
 
 .continue/

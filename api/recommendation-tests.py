@@ -60,6 +60,7 @@ class TestConfig(Config):
     AUTO_TRAIN_IF_MISSING = True
     SAVE_MODEL_AFTER_TRAIN = False
     START_RECOMMENDER_ON_APP_START = False
+    START_MOVIE_SEARCH_ON_APP_START = False
 
 class RecommendationTestBase(unittest.TestCase):
     app = None

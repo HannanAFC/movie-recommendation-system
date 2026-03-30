@@ -8,7 +8,7 @@ from app.models import User
 import sqlalchemy as sa
 from app.auth.password_reset import send_password_reset_email
 import datetime
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 @bp.after_request
 def refresh_expiring_jwts(response):
@@ -38,13 +38,30 @@ def get_current_user():
         "status_message": "Recommender status is unavailable."
     })
 
+    movie_search_status = current_app.extensions.get("movie_search_status", {
+        "is_ready": False,
+        "status_message": "Movie search status is unavailable."
+    })
+
+    tmdb_status = {
+        "api_key_set": current_user.tmdb_api_key is not None,
+        "api_key_valid": current_user.tmdb_api_key_valid,
+        "api_key_last_validated_at": (
+            current_user.tmdb_api_key_last_validated_at.isoformat()
+            if current_user.tmdb_api_key_last_validated_at is not None
+            else None
+        )
+    }
+
     return jsonify({
         "user": {
             "username": current_user.username,
             "email": current_user.email,
             "dataset_selected": dataset_selected,
             "needs_to_select_movies": needs_to_select_movies,
-            "recommender": recommender_status
+            "recommender": recommender_status,
+            "movie_search": movie_search_status,
+            "tmdb": tmdb_status
         }
     }), 200
 

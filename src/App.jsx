@@ -7,7 +7,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ResetPasswordRequestPage } from './pages/ResetPasswordRequestPage';
-import { SelectDatasetPage } from './pages/SelectDatasetPage';
+import { OnboardingPage } from './pages/OnboardingPage';
 import { LikeMoviesPage } from './pages/LikeMoviesPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -16,7 +16,9 @@ export default function App( )
     const [ user, setUser ]                               = useState( null );
     const [ isLoading, setIsLoading ]                     = useState( true );
     const [ datasetSelected, setDatasetSelected ]         = useState( false );
+    const [ onboardingComplete, setOnboardingComplete ] = useState( false );
     const [ needsToSelectMovies, setNeedsToSelectMovies ] = useState( true );
+    const [ tmdbApiKeyStatus, setTmdbApiKeyStatus ]       = useState( null );
 
     useEffect( ( ) =>
     {
@@ -44,6 +46,11 @@ export default function App( )
                 setUser( response.data.user );
                 setDatasetSelected( response.data.user.dataset_selected );
                 setNeedsToSelectMovies( response.data.user.needs_to_select_movies );
+                setTmdbApiKeyStatus( response.data.user.tmdb );
+                const apiKeySet         = response.data.user.tmdb.api_key_set;
+                const apiKeyValid       = response.data.user.tmdb.api_key_valid;
+                const datasetIsSelected = response.data.user.dataset_selected;
+                setOnboardingComplete( apiKeySet && apiKeyValid && datasetIsSelected );
             }
 
             setIsLoading( false );
@@ -118,12 +125,18 @@ export default function App( )
                      -> login
             */}
             <Route
-                path="/select-a-dataset"
+                path="/onboarding"
                 element=
                 {
                     user ?
                     (
-                        !datasetSelected ? <SelectDatasetPage setDatasetSelected={setDatasetSelected} /> : <Navigate to="/dashboard" replace={true} />
+                        !onboardingComplete ? <OnboardingPage
+                            setOnboardingComplete={setOnboardingComplete}
+                            datasetSelected={datasetSelected}
+                            setDatasetSelected={setDatasetSelected}
+                            tmdbApiKeyStatus={tmdbApiKeyStatus}
+                            setTmdbApiKeyStatus={setTmdbApiKeyStatus}
+                        /> : <Navigate to="/dashboard" replace={true} />
                     ) : <Navigate to="/login" replace={true} />
                 }
             />
@@ -140,10 +153,10 @@ export default function App( )
                 {
                     user ?
                     (
-                        datasetSelected ?
+                        onboardingComplete ?
                         (
                             needsToSelectMovies ? <LikeMoviesPage /> : <Navigate to="/dashboard" replace={true} />
-                        ) : <Navigate to="/select-a-dataset" replace={true} />
+                        ) : <Navigate to="/onboarding" replace={true} />
                     ) : <Navigate to="/login" replace={true} />
                 }
             />
@@ -163,7 +176,7 @@ export default function App( )
                         datasetSelected ?
                         (
                             !needsToSelectMovies ? <DashboardPage user={user} /> : <Navigate to="/select-your-favourites" replace={true} />
-                        ) : <Navigate to="/select-a-dataset" replace={true} />
+                        ) : <Navigate to="/onboarding" replace={true} />
                     ) : <Navigate to="/login" replace={true} />
                 }
             />

@@ -50,7 +50,7 @@ export function DatasetSelectForm({ setDatasetSelected })
             setDownloadProgress( 100 );
             setDownloadStarted( false );
             setDownloadFinished( true );
-            setDatasetSelected( true );
+            setDatasetSelected( true ); 
         } )
 
         return ( ) =>

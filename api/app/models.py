@@ -8,7 +8,7 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from cryptography.fernet import Fernet
 import jwt
-from app import db, jwt_manager
+from app.extensions import db, jwt_manager
 from time import time
 import pickle
 from datetime import datetime, timezone
@@ -25,8 +25,8 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 
 def get_encryption_key() -> bytes | None:
     """Gets the encryption key from the flask session."""
-    from flask import g
-    return getattr(g, "dek", None)
+    from flask import session
+    return session.get("dek")
 
 class Encrypted(sa.TypeDecorator):
     """
@@ -65,16 +65,18 @@ class User(UserMixin, db.Model):
         email (str):         desired email address
         password_hash (str): hashed password of the user (set using set_password)
     """
-    id:                     Mapped[int]                              = mapped_column(primary_key=True)
-    username:               Mapped[str]                              = mapped_column(sa.String(64), unique=True, index=True, nullable=False)
-    email:                  Mapped[str]                              = mapped_column(sa.String(128), unique=True, index=True, nullable=False)
-    tmdb_api_key:           Mapped[str]                              = mapped_column(Encrypted(), nullable=True)
-    password_hash:          Mapped[str]                              = mapped_column(sa.String(256), nullable=False)
-    encrypted_dek:          Mapped[str]                              = mapped_column(sa.LargeBinary, nullable=False)
-    dek_salt:               Mapped[str]                              = mapped_column(sa.LargeBinary, nullable=False)
-    movie_ratings:          WriteOnlyMapped["MovieRating"]           = relationship(back_populates="rating_author")
-    liked_movies:           WriteOnlyMapped["LikedMovie"]            = relationship(back_populates="rating_author")
-    recommendation_sets:    WriteOnlyMapped["RecommendationSet"]     = relationship(back_populates="user", cascade="all, delete-orphan", passive_deletes=True)
+    id:                             Mapped[int]                              = mapped_column(primary_key=True)
+    username:                       Mapped[str]                              = mapped_column(sa.String(64), unique=True, index=True, nullable=False)
+    email:                          Mapped[str]                              = mapped_column(sa.String(128), unique=True, index=True, nullable=False)
+    tmdb_api_key:                   Mapped[str]                              = mapped_column(Encrypted(), nullable=True)
+    password_hash:                  Mapped[str]                              = mapped_column(sa.String(256), nullable=False)
+    encrypted_dek:                  Mapped[str]                              = mapped_column(sa.LargeBinary, nullable=False)
+    dek_salt:                       Mapped[str]                              = mapped_column(sa.LargeBinary, nullable=False)
+    movie_ratings:                  WriteOnlyMapped["MovieRating"]           = relationship(back_populates="rating_author")
+    liked_movies:                   WriteOnlyMapped["LikedMovie"]            = relationship(back_populates="rating_author")
+    recommendation_sets:            WriteOnlyMapped["RecommendationSet"]     = relationship(back_populates="user", cascade="all, delete-orphan", passive_deletes=True)
+    tmdb_api_key_valid:             Mapped[bool]                             = mapped_column(sa.Boolean, default=False, nullable=False)
+    tmdb_api_key_last_validated_at: Mapped[datetime | None]                  = mapped_column(sa.DateTime, nullable=True)
 
     def __repr__(self):
         return f"<User\n\tid: {self.id}\n\tusername: {self.username}\n\temail: {self.email}\n>"
@@ -208,6 +210,23 @@ class User(UserMixin, db.Model):
                 db.session.delete(old_set)
             db.session.commit()
 
+    def has_tmdb_api_key(self) -> bool:
+        """
+        Check whether the user has a TMDB API key stored.
+        """
+        return self.tmdb_api_key is not None and self.tmdb_api_key != ""
+
+    def set_tmdb_api_key(self, api_key: str, is_valid: bool) -> None:
+        """
+        Store the user's TMDB API key and validation status.
+        Parameters:
+            api_key (str):   TMDB API key to store.
+            is_valid (bool): whether the key has been validated successfully.
+        """
+        self.tmdb_api_key = api_key
+        self.tmdb_api_key_valid = is_valid
+        self.tmdb_api_key_last_validated_at = datetime.now(timezone.utc) if is_valid else None
+
     @staticmethod
     def verify_reset_password_token(token) -> User | None:
         try:
@@ -294,3 +313,30 @@ class CachedRecommendation(db.Model):
 
     def __repr__(self):
         return f"<CachedRecommendation\n\tid: {self.id}\n\tuser_set_id: {self.user_set_id}\n\tmovie_id: {self.movie_id}\n\tscore: {self.score}\n>"
+    
+class CachedMovieMetadata(db.Model):
+    """
+    Model to store TMDB API data for a movie, this is used to prevent having to call the API for every request, improving performance.
+    Parameters:
+        movie_id (int):        dataset movieId of the movie.
+        tmdb_id (int):         TMDB id of the movie.
+        title (str):           title of the movie from the dataset.
+        overview (str):        movie overview via TMDB.
+        poster_path (str):     Path for the movie poster via TMDB.
+        backdrop_path (str):   Path for backdrop image.
+        release_data (str):    release date of movie via the dataset.
+        vote_average (float):  movie rating via TMDB.
+        raw_payload (str):     the original JSON response from the TMDB API in regards to this movie.
+        fetched_at (datetime): when the metadata was fetched from the API.
+    """
+    id:             Mapped[int]          = mapped_column(primary_key=True)
+    movie_id:       Mapped[int]          = mapped_column(sa.Integer, unique=True, index=True, nullable=False)
+    tmdb_id:        Mapped[int | None]   = mapped_column(sa.Integer, index=True, nullable=True)
+    title:          Mapped[str | None]   = mapped_column(sa.String(256), nullable=True)
+    overview:       Mapped[str | None]   = mapped_column(sa.Text, nullable=True)
+    poster_path:    Mapped[str | None]   = mapped_column(sa.String(256), nullable=True)
+    backdrop_path:  Mapped[str | None]   = mapped_column(sa.String(256), nullable=True)
+    release_date:   Mapped[str | None]   = mapped_column(sa.String(32), nullable=True)
+    vote_average:   Mapped[float | None] = mapped_column(sa.Float, nullable=True)
+    raw_payload:    Mapped[str | None]   = mapped_column(sa.Text, nullable=True)
+    fetched_at:     Mapped[datetime]     = mapped_column(sa.DateTime, default=datetime.now(timezone.utc), nullable=False)

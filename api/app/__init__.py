@@ -1,23 +1,16 @@
-from flask import Flask, current_app, request
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from flask_login import LoginManager
-from flask_mail import Mail
-from flask_jwt_extended import JWTManager
-from flask_socketio import SocketIO
+from flask import Flask
 import pandas as pd
 from config import Config
 from app.utils import DatasetManager, read_current_dataset
+from app.tmdb_service import TMDBService
+from app.movie_search import MovieSearchService
+from app.extensions import db, migrate, login, mail, jwt_manager, socketio
 
-db = SQLAlchemy()
-migrate = Migrate()
-login = LoginManager()
 login.login_view = "auth.login"
 login.login_message = "Login required to access this page."
-mail = Mail()
 dataset_manager = DatasetManager()
-jwt_manager = JWTManager()
-socketio = SocketIO()
+tmdb_service = TMDBService()
+movie_search_service = MovieSearchService()
 
 SOCKET_NAMESPACE = "/api/datasets-download-progress"
 
@@ -64,6 +57,37 @@ def initialise_recommender(app: Flask) -> None:
     app.extensions["recommender"] = recommender
     app.extensions["recommender_status"] = recommender.get_status()
 
+def initialise_movie_search(app: Flask) -> None:
+    """
+    Initialise the movie search service for the current application startup.
+    If no dataset exists, the movie search service is left unavailable.
+    """
+    app.extensions["movie_search"] = None
+    app.extensions["movie_search_status"] = {
+        "is_ready": False,
+        "status_message": "Movie search has not been initialised."
+    }
+
+    if not dataset_manager.dataset_exists():
+        app.extensions["movie_search_status"] = {
+            "is_ready": False,
+            "status_message": "No dataset is currently installed."
+        }
+        return
+
+    movies = pd.read_csv(app.config["MOVIES_PATH"])
+    links = pd.read_csv(app.config["LINKS_PATH"])
+    current_dataset_id = read_current_dataset(app.config["CURRENT_DATASET_PATH"])
+
+    movie_search_service.initialise_from_storage(
+        movies=movies,
+        links=links,
+        dataset_id=current_dataset_id
+    )
+
+    app.extensions["movie_search"] = movie_search_service
+    app.extensions["movie_search_status"] = movie_search_service.get_status()
+
 def create_app(config_class=Config):
     # Initialise flask and get the settings from the config class
     app = Flask(__name__)
@@ -84,12 +108,22 @@ def create_app(config_class=Config):
             logger=True,
             engineio_logger=True
         )
+    tmdb_service.init_app(app)
+    app.extensions["tmdb_service"] = tmdb_service
+
+    movie_search_service.init_app(app)
+    if app.config["START_MOVIE_SEARCH_ON_APP_START"]:
+        initialise_movie_search(app)
+
 
     from app.auth import bp as auth_bp
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
     from app.main import bp as main_bp
     app.register_blueprint(main_bp, url_prefix="/api")
+
+    from app.movies import bp as movies_bp
+    app.register_blueprint(movies_bp, url_prefix="/api/movies")
 
     from app.cli import bp as cli_bp
     app.register_blueprint(cli_bp)

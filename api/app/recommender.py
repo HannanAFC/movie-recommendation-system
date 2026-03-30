@@ -445,6 +445,15 @@ class CollaborativeRecommendationSystem:
         else:
             seed_movie_ids = context.positive_rated_movie_ids
 
+        seed_movie_ids = [
+            movie_id
+            for movie_id in seed_movie_ids
+            if movie_id in self.movie_id_to_idx
+        ]
+
+        if not seed_movie_ids:
+            return []
+
         recommendations: List[Tuple[int, float]] = []
         for movie_id in seed_movie_ids:
             recommendations.extend(self.get_similar_movies(movie_id, n=top_n))

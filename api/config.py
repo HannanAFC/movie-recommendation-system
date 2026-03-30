@@ -29,10 +29,15 @@ class Config():
     EXTRACTED_YEAR_PATH = "api/app/datasets/extracted_year.csv"
     CURRENT_DATASET_PATH = "api/app/datasets/current_dataset.txt"
     RECOMMENDER_MODEL_PATH = "api/models/collab_model.joblib"
+    SEARCH_INDEX_PATH = "api/models/movie_search_index.joblib"
+    SEARCH_INDEX_VERSION = 1
+    START_MOVIE_SEARCH_ON_APP_START = True
     PERSIST_COLLAB_MODEL = True
     AUTO_TRAIN_IF_MISSING = False
     SAVE_MODEL_AFTER_TRAIN = True
     START_RECOMMENDER_ON_APP_START = True
+    TMDB_API_BASE_URL = "https://api.themoviedb.org/3"
+    TMDB_API_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/original"
     LANGUAGES = ["en"]
     MAIL_SERVER = os.environ.get("MAIL_SERVER")
     MAIL_PORT = int(os.environ.get("MAIL_PORT") or 25)

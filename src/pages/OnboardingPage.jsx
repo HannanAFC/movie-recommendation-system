@@ -21,7 +21,7 @@ export function OnboardingPage({ setOnboardingComplete, datasetSelected, setData
         <>
             <title>WatchWok | Select a dataset</title>
 
-            <BasicHeader />
+            <BasicHeader sticky={true} />
 
             <div className="min-h-[calc(100vh-128px)] flex flex-col items-center justify-center gap-2 md:gap-4 max-w-300 mx-auto">
                 <section className="flex flex-col gap-2 md:gap-16">

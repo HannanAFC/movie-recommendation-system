@@ -9,6 +9,7 @@ import sqlalchemy as sa
 from flask import current_app
 from app.extensions import db
 from app.models import CachedMovieMetadata
+from datetime import timedelta
 
 class TMDBService:
     """
@@ -49,26 +50,41 @@ class TMDBService:
             "Authorization": f"Bearer {api_key}"
         }
 
-    def _normalise_tmdb_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
+    def _normalise_tmdb_payload(self, moviePayload: dict[str, Any], creditsPayload: dict[str, Any] | None) -> dict[str, Any]:
         """
         Normalise a TMDB movie payload into the shape used by the application cache.
         Parameters:
-            payload (dict[str, Any]): raw TMDB movie payload.
+            moviePayload (dict[str, Any]):   raw TMDB movie payload.
+            creditsPayload (dict[str, Any]): raw TMDB movie credits payload
         """
-        poster_url = f"{self._get_base_image_url()}{payload.get("backdrop_path")}"
-        backdrop_url = f"{self._get_base_image_url()}{payload.get("backdrop_path")}"
+        poster_url = f"{self._get_base_image_url()}{moviePayload.get("poster_path")}"
+        backdrop_url = f"{self._get_base_image_url()}{moviePayload.get("backdrop_path")}"
+
+        cast = creditsPayload.get("cast", [])
+        normalised_cast = [
+            {
+                "id": member.get("id"),
+                "name": member.get("name"),
+                "character": member.get("character"),
+                "profile_path": member.get("profile_path"),
+                "profile_url": f"{self._get_base_image_url()}{member.get("profile_path")}",
+                "order": member.get("order")
+            }
+            for member in cast[:10]
+        ]
 
         return {
-            "tmdb_id": payload.get("id"),
-            "title": payload.get("title"),
-            "overview": payload.get("overview"),
-            "poster_path": payload.get("backdrop_path"),
-            "poster_url": poster_url if {payload.get("backdrop_path")} else None,
-            "backdrop_path": payload.get("backdrop_path"),
-            "backdrop_url": backdrop_url if {payload.get("backdrop_path")} else None,
-            "release_date": payload.get("release_date"),
-            "vote_average": payload.get("vote_average"),
-            "raw_payload": json.dumps(payload)
+            "tmdb_id": moviePayload.get("id"),
+            "title": moviePayload.get("title"),
+            "overview": moviePayload.get("overview"),
+            "poster_path": moviePayload.get("poster_path"),
+            "poster_url": poster_url if moviePayload.get("poster_path") else None,
+            "backdrop_path": moviePayload.get("backdrop_path"),
+            "backdrop_url": backdrop_url if moviePayload.get("backdrop_path") else None,
+            "release_date": moviePayload.get("release_date"),
+            "vote_average": moviePayload.get("vote_average"),
+            "cast": json.dumps(normalised_cast) if creditsPayload else None,
+            "raw_payload": json.dumps(moviePayload)
         }
 
     def validate_api_key(self, api_key: str) -> bool:
@@ -93,7 +109,7 @@ class TMDBService:
         except (requests.RequestException, ValueError):
             return False
 
-    def fetch_movie_details(self, tmdb_id: str, api_key: str) -> dict[str, Any] | None:
+    def fetch_movie_details(self, tmdb_id: str, api_key: str, append_cast: bool) -> dict[str, Any] | None:
         """
         Fetch movie metadata from TMDB for a given TMDB movie id.
         Parameters:
@@ -104,16 +120,27 @@ class TMDBService:
             return None
 
         try:
-            response = requests.get(
+            movieDetails = requests.get(
                 f"{self._get_base_url()}/movie/{tmdb_id}",
                 headers=self._build_headers(api_key),
                 params={"language": "en-GB"},
                 timeout=self.timeout
             )
-            response.raise_for_status()
-            payload = response.json()
-            print(payload)
-            return self._normalise_tmdb_payload(payload)
+            movieDetails.raise_for_status()
+            movieDetailsPayload = movieDetails.json()
+
+            if append_cast:
+                creditsDetails = requests.get(
+                    f"{self._get_base_url()}/movie/{tmdb_id}/credits",
+                    headers=self._build_headers(api_key),
+                    params={"language": "en-GB"},
+                    timeout=self.timeout
+                )
+                creditsDetails.raise_for_status()
+                creditsDetailsPayload = creditsDetails.json()
+                return self._normalise_tmdb_payload(movieDetailsPayload, creditsDetailsPayload)
+            
+            return self._normalise_tmdb_payload(movieDetailsPayload, None)
         except (requests.RequestException, ValueError):
             return None
 
@@ -155,6 +182,7 @@ class TMDBService:
         cached.backdrop_path = payload.get("backdrop_path")
         cached.release_date = payload.get("release_date")
         cached.vote_average = payload.get("vote_average")
+        cached.cast = payload.get("cast")
         cached.raw_payload = payload.get("raw_payload")
         cached.fetched_at = datetime.now(timezone.utc)
 
@@ -169,7 +197,8 @@ class TMDBService:
             "backdrop_path": cached.backdrop_path,
             "backdrop_url": f"{self._get_base_image_url()}{cached.backdrop_path}" if cached.backdrop_path else None,
             "release_date": cached.release_date,
-            "vote_average": cached.vote_average
+            "vote_average": cached.vote_average,
+            "cast": json.loads(cached.cast) if cached.cast else []
         }
 
     def serialise_cached_movie_metadata(
@@ -190,8 +219,52 @@ class TMDBService:
             "backdrop_path": cached.backdrop_path,
             "backdrop_url": f"{self._get_base_image_url()}{cached.backdrop_path}" if cached.backdrop_path else None,
             "release_date": cached.release_date,
-            "vote_average": cached.vote_average
+            "vote_average": cached.vote_average,
+            "cast": json.loads(cached.cast) if cached.cast else []
         }
+    
+    def clear_cache(self) -> int:
+        """
+        Clear all cached TMDB movie metadata.
+        """
+        result = db.session.execute(
+            sa.delete(CachedMovieMetadata)
+        )
+        db.session.commit()
+        return result.rowcount or 0
+
+
+    def clear_cached_movie_metadata(self, movie_id: int) -> int:
+        """
+        Clear cached TMDB movie metadata for a dataset movie id.
+        Parameters:
+            movie_id (int): dataset movie id whose cached metadata should be removed.
+        """
+        result = db.session.execute(
+            sa.delete(CachedMovieMetadata).where(
+                CachedMovieMetadata.movie_id == int(movie_id)
+            )
+        )
+        db.session.commit()
+        return result.rowcount or 0
+    
+    from datetime import datetime, timedelta, timezone
+
+    def clear_stale_cache(self, max_age_hours: int = 168) -> int:
+        """
+        Clear cached TMDB movie metadata older than the given age.
+        Parameters:
+            max_age_hours (int): maximum cache age in hours.
+        """
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
+
+        result = db.session.execute(
+            sa.delete(CachedMovieMetadata).where(
+                CachedMovieMetadata.fetched_at < cutoff
+            )
+        )
+        db.session.commit()
+        return result.rowcount or 0
 
     def get_cached_or_fetch_movie_metadata(
         self,
@@ -213,7 +286,7 @@ class TMDBService:
         if cached is not None:
             return self.serialise_cached_movie_metadata(cached)
 
-        payload = self.fetch_movie_details(tmdb_id, api_key)
+        payload = self.fetch_movie_details(tmdb_id, api_key, True)
         if payload is None:
             return None
 

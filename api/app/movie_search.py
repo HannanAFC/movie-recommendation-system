@@ -7,6 +7,7 @@ from typing import Any
 import joblib
 import pandas as pd
 
+from app.tmdb_service import TMDBService
 
 class MovieSearchService:
     """
@@ -370,7 +371,7 @@ class MovieSearchService:
         query: str,
         limit: int,
         api_key: str | None,
-        tmdb_service
+        tmdb_service: TMDBService
     ) -> list[dict[str, Any]]:
         """
         Search the local dataset catalog and enrich the results with TMDB metadata when available.

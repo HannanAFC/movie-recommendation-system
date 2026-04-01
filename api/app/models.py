@@ -1,5 +1,5 @@
 import sqlalchemy as sa
-from sqlalchemy.orm import Mapped, mapped_column, relationship, WriteOnlyMapped
+from sqlalchemy.orm import Mapped, mapped_column, relationship, WriteOnlyMapped, load_only
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 import sqlite3
@@ -247,7 +247,20 @@ def user_identity_lookup(user):
 @jwt_manager.user_lookup_loader
 def user_lookup_callback(_jwt_header, jwt_data):
     identity = jwt_data["sub"]
-    return User.query.filter_by(username=identity).first()
+    user = db.session.scalar(
+        sa.select(User)
+        .options(
+            load_only(
+                User.id,
+                User.username,
+                User.password_hash,
+                User.encrypted_dek,
+                User.dek_salt
+            )
+        )
+        .where(User.username == identity)
+    )
+    return user
 
 class MovieRating(db.Model):
     """
@@ -270,13 +283,15 @@ class LikedMovie(db.Model):
     """
     Liked movies model, stored the movieId of a movie for a user in encrypted form.
     Parameters:
-        movie_id(str): the id of the movie to be rated - str as it will be encrypted.
-        rating_author: User object of the user who the rating is associated with.
+        movie_id(str):        the id of the movie to be rated - str as it will be encrypted.
+        movie_id_lookup(str): repeatable hash to lookup the movie_id for comparison.
+        rating_author:        User object of the user who the rating is associated with.
     """
-    id:            Mapped[int]  = mapped_column(primary_key=True)
-    user_id:       Mapped[int]  = mapped_column(sa.ForeignKey(User.id), index=True, nullable=False)
-    movie_id:      Mapped[str]  = mapped_column(Encrypted(), nullable=False)
-    rating_author: Mapped[User] = relationship(back_populates="liked_movies")
+    id:              Mapped[int]  = mapped_column(primary_key=True)
+    user_id:         Mapped[int]  = mapped_column(sa.ForeignKey(User.id), index=True, nullable=False)
+    movie_id:        Mapped[str]  = mapped_column(Encrypted(), nullable=False)
+    movie_id_lookup: Mapped[str]  = mapped_column(sa.String(64), index=True, nullable=False)
+    rating_author:   Mapped[User] = relationship(back_populates="liked_movies")
 
     def __repr__(self):
         return f"<MovieRating\n\tid: {self.id}\n\tuser_id: {self.user_id}\n\nmovie_id: {self.movie_id}\n>"
@@ -338,5 +353,6 @@ class CachedMovieMetadata(db.Model):
     backdrop_path:  Mapped[str | None]   = mapped_column(sa.String(256), nullable=True)
     release_date:   Mapped[str | None]   = mapped_column(sa.String(32), nullable=True)
     vote_average:   Mapped[float | None] = mapped_column(sa.Float, nullable=True)
+    cast:           Mapped[str | None]   = mapped_column(sa.Text, nullable=True)
     raw_payload:    Mapped[str | None]   = mapped_column(sa.Text, nullable=True)
     fetched_at:     Mapped[datetime]     = mapped_column(sa.DateTime, default=datetime.now(timezone.utc), nullable=False)

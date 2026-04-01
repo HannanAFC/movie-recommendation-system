@@ -6,6 +6,7 @@ from email.utils import parseaddr
 from app import db, dataset_manager
 from app.models import User
 import sqlalchemy as sa
+from sqlalchemy.orm import load_only
 from app.auth.password_reset import send_password_reset_email
 import datetime
 from datetime import datetime, timedelta
@@ -76,7 +77,19 @@ def login():
             "error": f"Please enter a { "username" if not username else "password" }."
         }), 422
 
-    user = User.query.filter_by(username=username).first()
+    user = db.session.scalar(
+        sa.select(User)
+        .options(
+            load_only(
+                User.id,
+                User.username,
+                User.password_hash,
+                User.encrypted_dek,
+                User.dek_salt
+            )
+        )
+        .where(User.username == username)
+    )
     if not user or type(user) != User or not user.check_password(password):
         return jsonify({
             "error": "Invalid username or password."

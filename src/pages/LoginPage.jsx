@@ -7,7 +7,7 @@ export function LoginPage()
         <>
             <title>WatchWok | Login</title>
                         
-            <BasicHeader />
+            <BasicHeader sticky={true} />
             <div className="min-h-[calc(100vh-112px)] flex flex-col items-center justify-center gap-2 md:gap-4">
                 <h1 className="font-bold text-3xl md:text-4xl">
                     Login to your account

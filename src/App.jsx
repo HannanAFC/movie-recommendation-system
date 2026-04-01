@@ -16,9 +16,10 @@ export default function App( )
     const [ user, setUser ]                               = useState( null );
     const [ isLoading, setIsLoading ]                     = useState( true );
     const [ datasetSelected, setDatasetSelected ]         = useState( false );
-    const [ onboardingComplete, setOnboardingComplete ] = useState( false );
+    const [ onboardingComplete, setOnboardingComplete ]   = useState( false );
     const [ needsToSelectMovies, setNeedsToSelectMovies ] = useState( true );
     const [ tmdbApiKeyStatus, setTmdbApiKeyStatus ]       = useState( null );
+    const [ likedMovies, setLikedMovies ]                 = useState( new Set( ) )
 
     useEffect( ( ) =>
     {
@@ -58,6 +59,31 @@ export default function App( )
 
         fetchUser( );
     }, [ ] );
+
+    useEffect( () =>
+    {
+        async function fetchLikedMovies( )
+        {
+            const response = await axios.get( "/api/movies/liked" )
+            .catch( ( error ) =>
+            {
+                if ( error.response.status === 401 )
+                {
+                    setLikedMovies( new Set( ) );
+                }
+            } );
+
+            if ( response && response.data )
+            {
+                setLikedMovies( new Set(response.data.liked_movie_ids ) );
+            }
+        }
+
+        if ( user )
+        {
+            fetchLikedMovies( );
+        }
+    }, [ user ] )
 
     // Defer rendering until the user API request is complete
     if ( isLoading )
@@ -155,7 +181,11 @@ export default function App( )
                     (
                         onboardingComplete ?
                         (
-                            needsToSelectMovies ? <LikeMoviesPage /> : <Navigate to="/dashboard" replace={true} />
+                            needsToSelectMovies ? <LikeMoviesPage
+                                setNeedsToSelectMovies={setNeedsToSelectMovies}
+                                likedMovies={likedMovies}
+                                setLikedMovies={setLikedMovies}
+                            /> : <Navigate to="/dashboard" replace={true} />
                         ) : <Navigate to="/onboarding" replace={true} />
                     ) : <Navigate to="/login" replace={true} />
                 }

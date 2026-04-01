@@ -1,19 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import { FormError } from '../components/FormError';
 import { getCookie } from '../utils/getCookie';
 import { FormSuccess } from './FormSuccess';
+import { SearchBar } from '../components/SearchBar'
 
 export function TmdbApiKeyForm({ tmdbApiKeyStatus, setTmdbApiKeyStatus })
 {
     const [ value, setValue ]                   = useState( "" );
     const [ error, setError ]                   = useState( null );
     const [ successMessage, setSuccessMessage ] = useState( tmdbApiKeyStatus.api_key_set === true && tmdbApiKeyStatus.api_key_valid === true ? "API key is already saved and has been validated." : null );
-
-    function handleValueChange( event )
-    {
-        setValue( event.target.value );
-    }
 
     function handleFormSubmit( event )
     {
@@ -53,6 +49,7 @@ export function TmdbApiKeyForm({ tmdbApiKeyStatus, setTmdbApiKeyStatus })
                 {
                     setTmdbApiKeyStatus( response.data.tmdb );
                     setSuccessMessage( response.data.message );
+                    setError( null );
                 }
             }
             
@@ -69,14 +66,13 @@ export function TmdbApiKeyForm({ tmdbApiKeyStatus, setTmdbApiKeyStatus })
                 <h1 className="font-bold text-3xl md:text-5xl mb-3 md:mb-4">
                     Enter your API key
                 </h1>
-                <input
+                <SearchBar
+                    searchValue={value}
+                    onSearchValueChange={setValue}
                     id="tmdb_api_key"
                     name="TMDB API key"
-                    type="text"
                     placeholder="TMDB API key"
-                    className="border-3 focus:border-willow-green-500 box-border transition-[border] outline-0 rounded-md p-1 mb-1 md:mb-2"
-                    value={value}
-                    onChange={handleValueChange}
+                    autoComplete={"off"}
                 />
                 <FormSuccess message={successMessage} />
                 <FormError error={error} />

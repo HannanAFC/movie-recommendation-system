@@ -8,7 +8,7 @@ export function HomePage( )
         <>
             <title>WatchWok | Get started</title>
             
-            <BasicHeader />
+            <BasicHeader sticky={true} />
 
             <div className="md:min-h-[calc(100vh-112px)] flex flex-col md:grid grid-cols-2 gap-8 md:gap-2 items-center justify-center">
                 <div className="flex flex-col gap-4 md:p8 p-4 rounded-md dark:bg-willow-green-900 bg-willow-green-200 shadow-s">

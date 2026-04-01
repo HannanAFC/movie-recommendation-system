@@ -11,6 +11,7 @@ from zipfile import ZipFile
 import warnings
 import requests
 import shutil
+import hashlib
 
 def sanitise_form_inputs(request: Request, fields: list[str]) -> dict[str, str | None]:
     """
@@ -90,6 +91,14 @@ def ensure_test_dataset(
         marker_path.write_text(local_filename, encoding="utf-8")
 
     return str(archive_path)
+
+def build_movie_id_lookup(movie_id: int) -> str:
+    """
+    Build hash of movie_id
+    Parameters:
+        movie_id (int): movie_id to hash.
+    """
+    return hashlib.sha256(str(movie_id).encode()).hexdigest()
 
 def write_current_dataset(dataset_id: str, marker_path: str) -> None:
     """

@@ -16,6 +16,8 @@
 		"lint": "eslint .",
 		"preview": "vite preview",
 		"api": "python /workspaces/movie-recommendation-system/api/movie-recommendation-system.py",
+		"db": "cd api && flask db upgrade",
+		"clean": "rm -r api/app/datasets && rm -r api/models && rm -r api/app.db",
 		"tailwind": "npx @tailwindcss/cli -i ./app/static/css/input.css -o ./app/static/css/output.css --watch",
 		"prettier": "npx prettier --write **/*.html"
 	},

@@ -9,10 +9,13 @@ import { RegisterPage } from './pages/RegisterPage';
 import { ResetPasswordRequestPage } from './pages/ResetPasswordRequestPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { LikeMoviesPage } from './pages/LikeMoviesPage';
+import { MoviePage } from './pages/MoviePage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import './types/user';
 
 export default function App( )
 {
+    /** @type {[User, React.Dispatch<React.SetStateAction<User>>]} */
     const [ user, setUser ]                               = useState( null );
     const [ isLoading, setIsLoading ]                     = useState( true );
     const [ datasetSelected, setDatasetSelected ]         = useState( false );
@@ -205,7 +208,30 @@ export default function App( )
                     (
                         datasetSelected ?
                         (
-                            !needsToSelectMovies ? <DashboardPage user={user} /> : <Navigate to="/select-your-favourites" replace={true} />
+                            !needsToSelectMovies ?
+                            <DashboardPage
+                                user={user}
+                                likedMovies={likedMovies}
+                                setLikedMovies={setLikedMovies}
+                            /> : <Navigate to="/select-your-favourites" replace={true} />
+                        ) : <Navigate to="/onboarding" replace={true} />
+                    ) : <Navigate to="/login" replace={true} />
+                }
+            />
+            <Route
+                path="/movies/:movieId"
+                element=
+                {
+                    user ?
+                    (
+                        datasetSelected ?
+                        (
+                            !needsToSelectMovies ?
+                            <MoviePage
+                                user={user}
+                                likedMovies={likedMovies}
+                                setLikedMovies={setLikedMovies}
+                            /> : <Navigate to="/select-your-favourites" replace={true} />
                         ) : <Navigate to="/onboarding" replace={true} />
                     ) : <Navigate to="/login" replace={true} />
                 }

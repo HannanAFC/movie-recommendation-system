@@ -37,13 +37,13 @@ export function MovieSearchBar({ setMovies })
             } )
             .catch( ( error ) =>
             {
-                if ( error.response && error.response.status === 500 )
+                if ( error.response.status === 500 )
                 {
-                    setError( error.response.data.error || "Unknown server error occured." );
+                    setError( "Internal server error." );
                 }
                 else
                 {
-                    setError( "Unknown server error occured." );
+                    setError( error.response.data.error );
                 }
                 
                 setMovies([ ]);

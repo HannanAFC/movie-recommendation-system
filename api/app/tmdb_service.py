@@ -198,7 +198,8 @@ class TMDBService:
             "backdrop_url": f"{self._get_base_image_url()}{cached.backdrop_path}" if cached.backdrop_path else None,
             "release_date": cached.release_date,
             "vote_average": cached.vote_average,
-            "cast": json.loads(cached.cast) if cached.cast else []
+            "cast": json.loads(cached.cast) if cached.cast else [],
+            "runtime": json.loads(cached.raw_payload)["runtime"]
         }
 
     def serialise_cached_movie_metadata(
@@ -220,7 +221,8 @@ class TMDBService:
             "backdrop_url": f"{self._get_base_image_url()}{cached.backdrop_path}" if cached.backdrop_path else None,
             "release_date": cached.release_date,
             "vote_average": cached.vote_average,
-            "cast": json.loads(cached.cast) if cached.cast else []
+            "cast": json.loads(cached.cast) if cached.cast else [],
+            "runtime": json.loads(cached.raw_payload)["runtime"]
         }
     
     def clear_cache(self) -> int:

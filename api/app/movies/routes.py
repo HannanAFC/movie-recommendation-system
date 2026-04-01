@@ -4,8 +4,9 @@ from flask_jwt_extended import jwt_required, current_user
 from app import dataset_manager, tmdb_service, movie_search_service
 from app.movies import bp
 from app.extensions import db
-from app.utils import build_movie_id_lookup
-from app.models import LikedMovie
+from app.utils import build_movie_id_lookup, sanitise_form_inputs
+from app.models import LikedMovie, MovieRating
+from app.recommendations.routes import serialise_recommendation_movie
 
 @bp.route("/search", methods=["GET"])
 @jwt_required()
@@ -38,6 +39,50 @@ def search_movies():
         "query": query,
         "tmdb_enrichment_available": tmdb_enrichment_available
     }), 200
+
+@bp.route("/<movie_id>", methods=["GET"])
+@jwt_required()
+def get_movie(movie_id):
+    if not movie_id:
+        return jsonify({
+            "error": "Please provide a movie ID."
+        }), 422
+    
+    try:
+        movie_id = int(movie_id)
+    except ValueError:
+        return jsonify({
+            "error": "Invalid movie ID."
+        }), 422
+
+    if movie_search_service is None or not movie_search_service.is_ready:
+        return jsonify({
+            "error": "Movie search service is not ready."
+        }), 503
+
+    if not movie_search_service.movie_exists(movie_id):
+        return jsonify({
+            "error": "Movie is not in the current dataset."
+        }), 409
+    
+    tmdb_enrichment_available = bool(
+        current_user.tmdb_api_key and current_user.tmdb_api_key_valid
+    )
+
+    if not tmdb_enrichment_available:
+        return jsonify({
+            "error": "TMDB enrichment not available, this is required for movie overviews."
+        }), 503
+    
+    serialised_movie = serialise_recommendation_movie(
+        movie_id=int(movie_id),
+        score=float(0.0),
+        tmdb_enrichment_available=tmdb_enrichment_available
+    )
+
+    return jsonify({
+        "movie": serialised_movie
+    })
 
 @bp.route("/liked", methods=["GET"])
 @jwt_required()
@@ -128,6 +173,72 @@ def like_movie(movie_id):
             "message": "Movie has been unliked successfully.",
             "needs_to_select_movies": needs_to_select_movies
         }), 200
+    
+@bp.route("/rate/<movie_id>", methods=["POST"])
+@jwt_required()
+def rate_movie(movie_id):
+    if not movie_id:
+        return jsonify({
+            "error": "Please provide a movie ID."
+        }), 422
+    
+    values = sanitise_form_inputs(request, ["rating"])
+    rating = values["rating"]
+
+    if not rating:
+        return jsonify({
+            "error": "Rating value required."
+        }), 422
+    
+    try:
+        rating = float(rating)
+    except ValueError:
+        return jsonify({
+            "error": "Invalid rating."
+        })
+
+    try:
+        movie_id = int(movie_id)
+    except ValueError:
+        return jsonify({
+            "error": "Invalid movie ID."
+        }), 422
+
+    if movie_search_service is None or not movie_search_service.is_ready:
+        return jsonify({
+            "error": "Movie search service is not ready."
+        }), 503
+
+    if not movie_search_service.movie_exists(movie_id):
+        return jsonify({
+            "error": "Movie is not in the current dataset."
+        }), 409
+
+    already_rated = db.session.scalar(
+        sa.select(MovieRating).where(
+            MovieRating.movie_id_lookup == build_movie_id_lookup(movie_id),
+            MovieRating.rating_author == current_user
+        )
+    )
+
+    if already_rated != None:
+        already_rated.rating = rating
+    else:
+        movie_rating = MovieRating(
+            movie_id=movie_id,
+            movie_id_lookup=build_movie_id_lookup(movie_id),
+            rating=rating,
+            rating_author=current_user
+        )
+
+        db.session.add(movie_rating)
+
+    db.session.commit()
+
+
+    return jsonify({
+        "message": "Movie has been rated successfully."
+    }), 200
 
 @bp.route("/clear-cache/<movie_id>", methods=["DELETE"])
 @jwt_required()

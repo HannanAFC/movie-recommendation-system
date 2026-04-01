@@ -16,7 +16,10 @@ export function LikeButton({ movieId, setCanContinue, likedMovies, setLikedMovie
 
         if ( response && response.data )
         {
-            setCanContinue( !response.data.needs_to_select_movies );
+            if ( setCanContinue )
+            {
+                setCanContinue( !response.data.needs_to_select_movies );
+            }
             setLikedMovies( ( prevLikedMovies ) =>
             {
                 const nextLikedMovies = new Set( prevLikedMovies );
@@ -38,7 +41,10 @@ export function LikeButton({ movieId, setCanContinue, likedMovies, setLikedMovie
 
         if ( response && response.data )
         {
-            setCanContinue( !response.data.needs_to_select_movies );
+            if ( setCanContinue )
+            {
+                setCanContinue( !response.data.needs_to_select_movies );
+            }
             setLikedMovies( ( prevLikedMovies ) =>
             {
                 const nextLikedMovies = new Set( prevLikedMovies );
@@ -50,8 +56,9 @@ export function LikeButton({ movieId, setCanContinue, likedMovies, setLikedMovie
         setDisabled( false );
     }
 
-    function handleLikeClick( )
+    function handleLikeClick( event )
     {
+        event.preventDefault( );
         setDisabled( true );
 
         if ( isLiked )

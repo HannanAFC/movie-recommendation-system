@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { StarRating } from './StarRating';
 import { LikeButton } from './LikeButton';
 import { MoviePlaceholderSVG } from '../assets/icons/MoviePlaceholderSVG';
@@ -6,7 +7,7 @@ import '../types/movies';
 /**
  * @param {{ movie: MovieSearchResult }} props
  */
-export function MovieCard({ movie, setCanContinue, likedMovies, setLikedMovies })
+export function MovieCard({ movie, setCanContinue, likedMovies, setLikedMovies, linkToMovie })
 {
     let genres = JSON.parse( JSON.stringify( movie.genres ) )
     if ( genres.length > 4 )
@@ -18,9 +19,11 @@ export function MovieCard({ movie, setCanContinue, likedMovies, setLikedMovies }
     }
 
     return (
-        <div className="relative cursor-pointer group">
+        <Link
+            to={linkToMovie ? `/movies/${movie.movieId}` : null}
+            className="relative group flex-1 grow basis-0 min-w-90">
             <div
-                className="rounded-md bg-willow-green-200 dark:bg-willow-green-900 p-2 shadow-m transition-[background-color,box-shadow,transform] duration-150 hover:shadow-l hover:bg-willow-green-300 dark:hover:bg-willow-green-800"
+                className="rounded-md bg-willow-green-200 dark:bg-willow-green-900 p-2 shadow-m transition-[background-color,box-shadow,transform] duration-150 hover:shadow-l hover:bg-willow-green-300 dark:hover:bg-willow-green-800 min-h-fit"
             >
                 <div
                     className="aspect-2/3 w-full rounded-md flex items-center justify-center"
@@ -39,7 +42,7 @@ export function MovieCard({ movie, setCanContinue, likedMovies, setLikedMovies }
                         )
                     }
                 </div>
-                <div className="opacity-100 pointer-coarse:opacity-100 transition-opacity duration-150 bg-linear-to-t from-black/90 from-40% to-transparent w-full absolute bottom-0 left-0 h-[70%] z-10 rounded-br-md rounded-bl-md flex items-end p-4 text-white">
+                <div className="opacity-0 pointer-coarse:opacity-100 pointer-fine:group-hover:opacity-100 transition-opacity duration-150 bg-linear-to-t from-black/90 from-40% to-transparent w-full absolute bottom-0 left-0 h-[70%] z-10 rounded-br-md rounded-bl-md flex items-end p-4 text-white min-h-fit">
                     <div
                         className="h-[60%] w-full flex flex-col gap-1 bottom-0"
                     >
@@ -76,6 +79,6 @@ export function MovieCard({ movie, setCanContinue, likedMovies, setLikedMovies }
                     </div>
                 </div>
             </div>
-        </div>
+        </Link>
     )
 }

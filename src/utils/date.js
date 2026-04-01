@@ -10,7 +10,7 @@ export function formatDateFull( date )
     return formatted.toLocaleDateString( "en-GB",
     {
         month: "long",
-        day: "numeric",
+        day: "2-digit",
         year: "numeric"
     } );
 }

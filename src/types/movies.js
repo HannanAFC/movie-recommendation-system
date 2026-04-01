@@ -10,6 +10,7 @@
  * @property {string} release_date
  * @property {number} vote_average
  * @property {MovieSearchResultCast[]} cast
+ * @property {number} runtime 
  */
 
 /**

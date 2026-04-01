@@ -35,12 +35,13 @@ export function TmdbApiKeyForm({ tmdbApiKeyStatus, setTmdbApiKeyStatus })
                 } )
                 .catch( ( error ) =>              
                 {
-                    if ( error.response && error.response.status === 500 )
+                    if ( error.response.status === 500 )
                     {
                         setError( "Internal server error." );
-                    } else
+                    }
+                    else
                     {
-                        setError( error.response.data.error || "Unknown server error occured." );
+                        setError( error.response.data.error );
                     }
                     setSuccessMessage( null );
                 } );

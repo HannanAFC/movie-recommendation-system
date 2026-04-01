@@ -10,6 +10,7 @@ from scipy.sparse import csr_matrix
 from dataclasses import dataclass
 from pathlib import Path
 import joblib
+from datetime import datetime
 
 @dataclass(frozen=True)
 class UserRecommendationContext:
@@ -624,6 +625,10 @@ class HybridRecommendationSystem:
         self.needs_manual_initialisation = False
         self.status_message: str | None = None
 
+        self.is_generating = False
+        self.generation_error: str | None = None
+        self.generation_started_at: str | None = None
+
         self.collab = CollaborativeRecommendationSystem(movies, ratings)
         self.content = ContentRecommendationSystem(movies, ratings)
 
@@ -731,6 +736,16 @@ class HybridRecommendationSystem:
             movie_id: (float(score) - min_v) / (max_v - min_v)
             for movie_id, score in scores.items()
         }
+    
+    def get_generation_status(self) -> dict:
+        """
+        Check the current status of the recommendation service.
+        """
+        return {
+            "is_generating": self.is_generating,
+            "generation_error": self.generation_error,
+            "generation_started_at": self.generation_started_at.isoformat() if self.generation_started_at else None
+        }
 
     def recommend(
         self,
@@ -753,6 +768,9 @@ class HybridRecommendationSystem:
                 self.status_message or "Recommender is not ready and requires manual initialisation."
             )
         
+        self.is_generating = True
+        self.generation_started_at = datetime.now()
+
         context = self._build_user_context(user)
 
         collab_recs = self.collab.recommend_from_context(context, top_n=candidate_n)
@@ -795,5 +813,8 @@ class HybridRecommendationSystem:
 
         if cache_result:
             user.cache_recommendation_set(results)
+
+        self.is_generating = False
+        self.generation_started_at = None
 
         return results

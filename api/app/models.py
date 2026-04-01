@@ -266,15 +266,17 @@ class MovieRating(db.Model):
     """
     Movie rating model, stores the movieId and rating of a movie for a user in encrypted form.
     Parameters:
-        movie_id(str): the id of the movie to be rated - str as it will be encrypted.
-        rating(str):   the rating of the movie - str as it will be encrypted as well.
-        rating_author: User object of the user who the rating is associated with.
+        movie_id(str):        the id of the movie to be rated - str as it will be encrypted.
+        movie_id_lookup(str): repeatable hash to lookup the movie_id for comparison.
+        rating(str):          the rating of the movie - str as it will be encrypted as well.
+        rating_author:        User object of the user who the rating is associated with.
     """
-    id:            Mapped[int]  = mapped_column(primary_key=True)
-    user_id:       Mapped[int]  = mapped_column(sa.ForeignKey(User.id), index=True, nullable=False)
-    movie_id:      Mapped[str]  = mapped_column(Encrypted(), nullable=False)
-    rating:        Mapped[str]  = mapped_column(Encrypted(), nullable=False)
-    rating_author: Mapped[User] = relationship(back_populates="movie_ratings")
+    id:              Mapped[int]  = mapped_column(primary_key=True)
+    user_id:         Mapped[int]  = mapped_column(sa.ForeignKey(User.id), index=True, nullable=False)
+    movie_id:        Mapped[str]  = mapped_column(Encrypted(), nullable=False)
+    movie_id_lookup: Mapped[str]  = mapped_column(sa.String(64), index=True, nullable=False)
+    rating:          Mapped[str]  = mapped_column(Encrypted(), nullable=False)
+    rating_author:   Mapped[User] = relationship(back_populates="movie_ratings")
 
     def __repr__(self):
         return f"<MovieRating\n\tid: {self.id}\n\tuser_id: {self.user_id}\n\nmovie_id: {self.movie_id}\n\trating_author: {self.rating_author}\n>"

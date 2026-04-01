@@ -1,10 +1,10 @@
 from flask import Flask
 import pandas as pd
 from config import Config
-from app.utils import DatasetManager, read_current_dataset
 from app.tmdb_service import TMDBService
 from app.movie_search import MovieSearchService
 from app.extensions import db, migrate, login, mail, jwt_manager, socketio
+from app.utils import DatasetManager, read_current_dataset
 
 login.login_view = "auth.login"
 login.login_message = "Login required to access this page."
@@ -124,6 +124,9 @@ def create_app(config_class=Config):
 
     from app.movies import bp as movies_bp
     app.register_blueprint(movies_bp, url_prefix="/api/movies")
+
+    from app.recommendations import bp as recommendations_bp
+    app.register_blueprint(recommendations_bp, url_prefix="/api/recommendations")
 
     from app.cli import bp as cli_bp
     app.register_blueprint(cli_bp)

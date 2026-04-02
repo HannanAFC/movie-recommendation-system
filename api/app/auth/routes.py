@@ -1,5 +1,12 @@
 from flask import request, session, jsonify, current_app
-from flask_jwt_extended import create_access_token, jwt_required, current_user, get_jwt, set_access_cookies, unset_jwt_cookies
+from flask_jwt_extended import (
+    create_access_token,
+    jwt_required,
+    current_user,
+    get_jwt,
+    set_access_cookies,
+    unset_jwt_cookies,
+)
 from app.auth import bp
 from app.utils import sanitise_form_inputs
 from email.utils import parseaddr
@@ -8,12 +15,11 @@ from app.models import User
 import sqlalchemy as sa
 from sqlalchemy.orm import load_only
 from app.auth.password_reset import send_password_reset_email
-import datetime
 from datetime import datetime, timedelta
+
 
 @bp.after_request
 def refresh_expiring_jwts(response):
-    print("Test")
     try:
         exp_timestamp = get_jwt()["exp"]
         now = datetime.now()
@@ -90,59 +96,60 @@ def login():
         )
         .where(User.username == username)
     )
-    if not user or type(user) != User or not user.check_password(password):
-        return jsonify({
-            "error": "Invalid username or password."
-        }), 401
-    
-    session["dek"] = user.unlock_dek(password=password)
+
+    if not user or not isinstance(user, User) or not user.check_password(password):
+        return jsonify({"error": "Invalid username or password."}), 401
+
+    session.clear()
+    session["dek"] = user.unlock_dek(password=password).decode()
 
     access_token = create_access_token(identity=user, expires_delta=timedelta(minutes=60))
     response = jsonify({"message": "Login successful."})
-    set_access_cookies(response, access_token)  # Ensure cookies are set with httponly=True (default)
+    set_access_cookies(response, access_token)
     return response, 200
 
-@bp.route("/logout", methods=["GET"])
+
+@bp.route("/logout", methods=["POST"])
 @jwt_required()
 def logout():
     response = jsonify({"message": "Logout successful."})
-    unset_jwt_cookies(response)  # Ensure cookies are unset properly
-    if session.get("dek"):
-        session.pop("dek")
+    unset_jwt_cookies(response)
+    session.clear()
     return response, 200
+
 
 @bp.route("/register", methods=["POST"])
 def register():
-    values = sanitise_form_inputs(request=request, fields=["email", "username", "password", "repeat_password"])
-    email           = values["email"]
-    username        = values["username"]
-    password        = values["password"]
+    values = sanitise_form_inputs(
+        request=request,
+        fields=["email", "username", "password", "repeat_password"]
+    )
+    email = values["email"]
+    username = values["username"]
+    password = values["password"]
     repeat_password = values["repeat_password"]
-    if not all([username, password, repeat_password, email]) or password != repeat_password or not "@" in parseaddr(email)[1]:
-        return jsonify({
-            "error": "Invalid details."
-        }), 422
-    
-    elif User.query.filter_by(email=email).first() is not None:
-        return jsonify({
-            "error": "Email already in use."
-        }), 409
-    
-    elif User.query.filter_by(username=username).first() is not None:
-        return jsonify({
-            "error": "Username already in use."
-        }), 409
-    
-    else:
-        user = User(username=username, email=email)
-        user.set_password(password=password)
-        db.session.add(user)
-        db.session.commit()
-        
-        access_token = create_access_token(identity=user, expires_delta=timedelta(minutes=60))
-        response = jsonify({"message": "Registration successful."})
-        set_access_cookies(response, access_token)
-        return response, 200
+
+    if not all([username, password, repeat_password, email]) or password != repeat_password or "@" not in parseaddr(email)[1]:
+        return jsonify({"error": "Invalid details."}), 422
+
+    if User.query.filter_by(email=email).first() is not None:
+        return jsonify({"error": "Email already in use."}), 409
+
+    if User.query.filter_by(username=username).first() is not None:
+        return jsonify({"error": "Username already in use."}), 409
+
+    user = User(username=username, email=email)
+    user.set_password(password=password)
+    db.session.add(user)
+    db.session.commit()
+
+    session.clear()
+    session["dek"] = user.unlock_dek(password=password).decode()
+
+    access_token = create_access_token(identity=user, expires_delta=timedelta(minutes=60))
+    response = jsonify({"message": "Registration successful."})
+    set_access_cookies(response, access_token)
+    return response, 200
 
 @bp.route("/reset-password-request", methods=["POST"])
 def reset_password_request():

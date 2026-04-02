@@ -52,3 +52,5 @@ class Config():
     JWT_ACCESS_COOKIE_NAME = "access_token_cookie"
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
     USE_SOCKETIO = True
+    SESSION_COOKIE_SAMESITE = "None"
+    SESSION_COOKIE_SECURE = True

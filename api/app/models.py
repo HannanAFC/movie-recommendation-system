@@ -26,7 +26,8 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 def get_encryption_key() -> bytes | None:
     """Gets the encryption key from the flask session."""
     from flask import session
-    return session.get("dek")
+    dek = session.get("dek")
+    return dek.encode() if dek else None
 
 class Encrypted(sa.TypeDecorator):
     """

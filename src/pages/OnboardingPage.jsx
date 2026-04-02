@@ -2,7 +2,7 @@ import { BasicHeader } from '../components/BasicHeader';
 import { DatasetSelectForm } from '../components/DatasetSelectForm';
 import { TmdbApiKeyForm } from '../components/TmdbApiKeyForm';
 
-export function OnboardingPage({ setOnboardingComplete, datasetSelected, setDatasetSelected, tmdbApiKeyStatus, setTmdbApiKeyStatus })
+export function OnboardingPage({ setOnboardingComplete, datasetSelected, setDatasetSelected, tmdbApiKeyStatus, setTmdbApiKeyStatus, setUser })
 {   
     const canContinue =
     tmdbApiKeyStatus?.api_key_set &&
@@ -57,6 +57,7 @@ export function OnboardingPage({ setOnboardingComplete, datasetSelected, setData
                         Continue
                     </button>
                 </section>
+                <Footer setUser={setUser} />
             </div>
         </>
     );

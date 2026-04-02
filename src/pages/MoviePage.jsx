@@ -9,7 +9,7 @@ import { formatRuntime } from '../utils/time'
 import { StarRating } from '../components/StarRating';
 import { LikeButton } from '../components/LikeButton';
 
-export function MoviePage({ user, likedMovies, setLikedMovies })
+export function MoviePage({ user, likedMovies, setLikedMovies, setUser })
 {
     const { movieId } = useParams( );
     /** @type {[MovieSearchResult, React.Dispatch<React.SetStateAction<MovieSearchResult>>]} */
@@ -145,6 +145,7 @@ export function MoviePage({ user, likedMovies, setLikedMovies })
                     )
                 }
             </div>
+            <Footer setUser={setUser} />
         </>
     );
 }

@@ -165,6 +165,7 @@ export default function App( )
                             setDatasetSelected={setDatasetSelected}
                             tmdbApiKeyStatus={tmdbApiKeyStatus}
                             setTmdbApiKeyStatus={setTmdbApiKeyStatus}
+                            setUser={setUser}
                         /> : <Navigate to="/dashboard" replace={true} />
                     ) : <Navigate to="/login" replace={true} />
                 }
@@ -188,6 +189,7 @@ export default function App( )
                                 setNeedsToSelectMovies={setNeedsToSelectMovies}
                                 likedMovies={likedMovies}
                                 setLikedMovies={setLikedMovies}
+                                setUser={setUser}
                             /> : <Navigate to="/dashboard" replace={true} />
                         ) : <Navigate to="/onboarding" replace={true} />
                     ) : <Navigate to="/login" replace={true} />
@@ -213,6 +215,7 @@ export default function App( )
                                 user={user}
                                 likedMovies={likedMovies}
                                 setLikedMovies={setLikedMovies}
+                                setUser={setUser}
                             /> : <Navigate to="/select-your-favourites" replace={true} />
                         ) : <Navigate to="/onboarding" replace={true} />
                     ) : <Navigate to="/login" replace={true} />
@@ -231,6 +234,7 @@ export default function App( )
                                 user={user}
                                 likedMovies={likedMovies}
                                 setLikedMovies={setLikedMovies}
+                                setUser={setUser}
                             /> : <Navigate to="/select-your-favourites" replace={true} />
                         ) : <Navigate to="/onboarding" replace={true} />
                     ) : <Navigate to="/login" replace={true} />

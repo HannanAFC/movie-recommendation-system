@@ -7,11 +7,12 @@ import '../types/user';
 import { useEffect, useState } from 'react';
 import { InitialiseRecommenderButton } from '../components/InitialiseRecommenderButton';
 import { CreateRecommendationButton } from '../components/CreateRecommendationButton';
+import { Footer } from '../components/Footer';
 
 /**
  * @param {{ user: User }} props
  */
-export function DashboardPage({ user, likedMovies, setLikedMovies })
+export function DashboardPage({ user, likedMovies, setLikedMovies, setUser })
 {
     const [ recommendations, setRecommendations ]         = useState([ ]);
     const [ recommendationError, setRecommendationError ] = useState( null );
@@ -69,7 +70,7 @@ export function DashboardPage({ user, likedMovies, setLikedMovies })
                 
             } );
 
-            if ( response && response.data && response.data.recommendation_set )
+            if ( response && response.data && response.data.recommendation_set && response.data.recommendation_set.movies )
             {
                 if ( response.data.recommendation_set.movies.length && response.data.recommendation_set.movies.length > 0  )
                 {
@@ -84,6 +85,10 @@ export function DashboardPage({ user, likedMovies, setLikedMovies })
                         </div>
                      )
                 }
+            }
+            else
+            {
+                setRecommendationError( "You have no recommendations yet, click below to create some!" );
             }
         }
 
@@ -135,6 +140,7 @@ export function DashboardPage({ user, likedMovies, setLikedMovies })
                 timeout={notification.timeout}
                 onClose={hideNotification}
             />
+            <Footer setUser={setUser} />
         </>
     );
 }

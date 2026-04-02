@@ -4,7 +4,7 @@ import { MovieSearchBar } from '../components/MovieSearchBar';
 import { MovieGrid } from '../components/MovieGrid';
 import '../types/movies';
 
-export function LikeMoviesPage({ setNeedsToSelectMovies, likedMovies, setLikedMovies })
+export function LikeMoviesPage({ setNeedsToSelectMovies, likedMovies, setLikedMovies, setUser })
 {
     /** @type {[MovieSearchResult[], React.Dispatch<React.SetStateAction<MovieSearchResult[]>>]} */
     const [ movies, setMovies ] = useState([ ]);
@@ -52,7 +52,9 @@ export function LikeMoviesPage({ setNeedsToSelectMovies, likedMovies, setLikedMo
                 <section className="flex flex-col gap-2 md:gap-16 w-full">
                     <MovieGrid movies={movies} setCanContinue={setCanContinue} likedMovies={likedMovies} setLikedMovies={setLikedMovies} />
                 </section>
+                
             </div>
+            <Footer setUser={setUser} />
         </>
     );
 }

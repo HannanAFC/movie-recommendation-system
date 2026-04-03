@@ -9,6 +9,7 @@
         - [With Git](#with-git)
     - [Open in Dev Container](#open-in-dev-container)
     - [Adding dependencies](#adding-dependencies)
+- [Usage](#usage)
 
 ## Introduction
 The aim of this project is to develop a system which utilises machine learning to provide users with movie recommendations based on their preferences and historical movie ratings.
@@ -56,3 +57,15 @@ If you need to add dependencies, simply run:
 poetry add <package name>
 ```
 This will install the dependency locally and also add it to ```pyproject.toml```, remember to push the update of this file as it contains the dependencies that need to be installed on subsequent Dev Container start ups.
+
+## Usage
+
+To run the application, you will need to open a terminal instance. Before running any commands, make sure that the python env has been automatically set to the one inside the project. before the ```root``` text in the terminal, you should see ```(movie-recommendation-system-py3.14)```. If this isn't here wait up to 30 seconds and it should eventually appear. If not type ```cd api``` then ```poetry env activate```. This will ouput a command you can use to set the env manually.
+
+In the terminal, inside of the api folder, run ```pnpm run db```, this will initialise the database.
+
+In another terminal window, from the root (not inside ```api/```), run the command ```pnpm run api```. This will start the flask backend, make sure the env is also set in this terminal.
+
+Inside another terminal window, run ```pnpm run dev```, this will start the frontend. You should see an output in the terminal with a URL address. Open this address in your browser and you should be greeted with the application. You can start using the application from here!
+
+If you need to clean the application so you can start fresh, run ```pnpm run clean```, this will delete the datasets, database, remove the trained collaborative model and also remove the search index.

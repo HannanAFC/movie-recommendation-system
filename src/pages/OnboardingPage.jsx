@@ -1,5 +1,6 @@
 import { BasicHeader } from '../components/BasicHeader';
 import { DatasetSelectForm } from '../components/DatasetSelectForm';
+import { Footer } from '../components/Footer';
 import { TmdbApiKeyForm } from '../components/TmdbApiKeyForm';
 
 export function OnboardingPage({ setOnboardingComplete, datasetSelected, setDatasetSelected, tmdbApiKeyStatus, setTmdbApiKeyStatus, setUser })

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BasicHeader } from '../components/BasicHeader';
 import { MovieSearchBar } from '../components/MovieSearchBar';
 import { MovieGrid } from '../components/MovieGrid';
+import { Footer } from '../components/Footer';
 import '../types/movies';
 
 export function LikeMoviesPage({ setNeedsToSelectMovies, likedMovies, setLikedMovies, setUser })

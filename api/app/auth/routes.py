@@ -132,10 +132,10 @@ def register():
     if not all([username, password, repeat_password, email]) or password != repeat_password or "@" not in parseaddr(email)[1]:
         return jsonify({"error": "Invalid details."}), 422
 
-    if User.query.filter_by(email=email).first() is not None:
+    if User.query.filter_by(email=email).options(load_only(User.email)).first() is not None:
         return jsonify({"error": "Email already in use."}), 409
 
-    if User.query.filter_by(username=username).first() is not None:
+    if User.query.filter_by(username=username).options(load_only(User.username)).first() is not None:
         return jsonify({"error": "Username already in use."}), 409
 
     user = User(username=username, email=email)

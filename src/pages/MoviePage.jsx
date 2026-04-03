@@ -8,6 +8,7 @@ import { formatDateFull } from '../utils/date';
 import { formatRuntime } from '../utils/time'
 import { StarRating } from '../components/StarRating';
 import { LikeButton } from '../components/LikeButton';
+import { Footer } from '../components/Footer';
 
 export function MoviePage({ user, likedMovies, setLikedMovies, setUser })
 {

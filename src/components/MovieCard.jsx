@@ -62,7 +62,19 @@ export function MovieCard({ movie, setCanContinue, likedMovies, setLikedMovies, 
                                     <span
                                         className="text-sm text-willow-green-200"
                                     >
-                                        {movie.tmdb.cast[0].name} | {movie.tmdb.cast[1].name} | {movie.tmdb.cast[2].name}
+                                        {movie.tmdb.cast[0].name}
+                                        {
+                                            movie.tmdb.cast[1] &&
+                                            (
+                                               " | " + movie.tmdb.cast[1].name
+                                            )
+                                        }
+                                        {
+                                            movie.tmdb.cast[2] &&
+                                            (
+                                               " | " + movie.tmdb.cast[2].name
+                                            )
+                                        }
                                     </span>
                                 )
                             }

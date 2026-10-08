@@ -1,9 +1,11 @@
-from flask import Flask
 import pandas as pd
 from config import Config
-from app.tmdb_service import TMDBService
+from flask import Flask
+from flask_cors import CORS
+
+from app.extensions import db, jwt_manager, login, mail, migrate, socketio
 from app.movie_search import MovieSearchService
-from app.extensions import db, migrate, login, mail, jwt_manager, socketio
+from app.tmdb_service import TMDBService
 from app.utils import DatasetManager, read_current_dataset
 
 login.login_view = "auth.login"
@@ -100,10 +102,13 @@ def create_app(config_class=Config):
     mail.init_app(app)
     dataset_manager.init_app(app)
     jwt_manager.init_app(app)
+
+    CORS( app, origins=["http://localhost:5173"], supports_credentials=True )
+
     if ( app.config["USE_SOCKETIO"] == True ):
         socketio.init_app(
             app,
-            cors_allowed_origins=["http://localhost:5001", "http://127.0.0.1:5001"],
+            cors_allowed_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
             cors_credentials=True,
             logger=True,
             engineio_logger=True

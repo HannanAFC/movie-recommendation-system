@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import axios from 'axios';
+import { apiClient } from '../utils/apiClient';
 import { FormError } from './FormError';
 
 export function RegisterForm()
@@ -35,7 +35,7 @@ export function RegisterForm()
     {
         async function login( formData )
         {
-            const response = await axios.postForm( "/api/auth/register", formData )
+            const response = await apiClient.postForm( "/api/auth/register", formData )
             .catch( ( error ) =>
             {
                 if ( error.response.status === 500 )

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../utils/apiClient';
 import { FormError } from './FormError';
 
 export function CreateRecommendationButton({ setRecommendations })
@@ -9,7 +9,7 @@ export function CreateRecommendationButton({ setRecommendations })
 
     async function createRecommendations( )
     {
-        const response = await axios.post( "/api/recommendations/create" )
+        const response = await apiClient.post( "/api/recommendations/create" )
         .catch( ( error ) =>              
         {
             if ( error.response.status === 500 )

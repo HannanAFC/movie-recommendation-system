@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../utils/apiClient';
 import { socket } from '../components/socket';
 import { FormError } from '../components/FormError';
 import { getCookie } from '../utils/getCookie';
@@ -63,7 +63,7 @@ export function DatasetSelectForm({ setDatasetSelected })
     {
         async function getAvailableDatasets( )
         {
-                const response = await axios.get( "/api/datasets-available" )
+                const response = await apiClient.get( "/api/datasets-available" )
                 .catch( ( error ) =>
                 {
                     if ( error.response && error.response.status === 500 )
@@ -99,7 +99,7 @@ export function DatasetSelectForm({ setDatasetSelected })
             
             async function downloadDataset( formData )
             {
-                const response = await axios.postForm( "/api/datasets-select", formData,
+                const response = await apiClient.postForm( "/api/datasets-select", formData,
                 {
                     headers:
                     {

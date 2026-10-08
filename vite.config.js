@@ -9,10 +9,13 @@ export default defineConfig({
     tailwindcss()
   ],
   server: {
-    host: '127.0.0.1',
+    host: true,
+    strictPort: true,
     proxy: {
-      '/api': 'http://127.0.0.1:5000',
+      '/api': 'http://localhost:8000',
     },
-    port: 5001
+    hmr: {
+      clientPort: 5173
+    }
   },
 })

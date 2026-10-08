@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { apiClient } from '../utils/apiClient';
 import { BasicHeader } from '../components/BasicHeader'
 import { RecommendationsSlider } from '../components/RecommendationsSlider';
 import { useNotification } from '../hooks/useNotification';
@@ -54,7 +54,7 @@ export function DashboardPage({ user, likedMovies, setLikedMovies, setUser })
                 return;
             }
 
-            const response = await axios.get( "/api/recommendations/latest" )
+            const response = await apiClient.get( "/api/recommendations/latest" )
             .catch( ( error ) =>
             {
                 if ( error.response.status === 500 )

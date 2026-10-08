@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiClient } from '../utils/apiClient';
 import { SearchBar } from './SearchBar';
 import { FormError } from './FormError';
 
@@ -31,7 +31,7 @@ export function MovieSearchBar({ setMovies })
 
         const timeoutId = setTimeout( async () =>
         {
-            const response = await axios.get( `/api/movies/search?q=${encodeURIComponent(trimmedSearchValue)}`,
+            const response = await apiClient.get( `/api/movies/search?q=${encodeURIComponent(trimmedSearchValue)}`,
             {
                 signal: controller.signal
             } )

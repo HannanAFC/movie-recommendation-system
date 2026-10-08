@@ -1,4 +1,4 @@
-import axios from "axios";
+import { apiClient } from "../utils/apiClient";
 import { FormError } from "./FormError";
 import { useState } from "react";
 
@@ -8,7 +8,7 @@ export function InitialiseRecommenderButton({ user, showNotification })
 
     async function sendInitialiseRequest( )
     {
-        const response = await axios.post("/api/recommendations/initialise")
+        const response = await apiClient.post("/api/recommendations/initialise")
         .catch( ( error ) =>              
         {
             if ( error.response.status === 500 )

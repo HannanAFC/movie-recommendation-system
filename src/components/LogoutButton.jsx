@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import axios from 'axios';
+import { apiClient } from '../utils/apiClient';
 import { FormError } from '../components/FormError';
 
 export function LogoutButton({ setUser })
@@ -10,7 +10,7 @@ export function LogoutButton({ setUser })
 
     async function handleButtonClick( )
     {
-        const response = await axios.post( "/api/auth/logout" )
+        const response = await apiClient.post( "/api/auth/logout" )
         .catch( ( error ) =>              
         {
             if ( error.response.status === 500 )

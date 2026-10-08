@@ -12,6 +12,7 @@ import { LikeMoviesPage } from './pages/LikeMoviesPage';
 import { MoviePage } from './pages/MoviePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import './types/user';
+import { apiClient } from './utils/apiClient';
 
 export default function App( )
 {
@@ -28,7 +29,7 @@ export default function App( )
     {
         async function fetchUser( )
         {
-            const response = await axios.get(
+            const response = await apiClient.get(
                 "/api/auth/@me",
                 {
                     headers:
@@ -67,7 +68,7 @@ export default function App( )
     {
         async function fetchLikedMovies( )
         {
-            const response = await axios.get( "/api/movies/liked" )
+            const response = await apiClient.get( "/api/movies/liked" )
             .catch( ( error ) =>
             {
                 if ( error.response.status === 401 )

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../utils/apiClient';
 import { FormError } from '../components/FormError';
 import { getCookie } from '../utils/getCookie';
 import { FormSuccess } from './FormSuccess';
@@ -26,7 +26,7 @@ export function TmdbApiKeyForm({ tmdbApiKeyStatus, setTmdbApiKeyStatus })
 
             async function sumbitApiKey( formData )
             {
-                const response = await axios.postForm( "/api/tmdb-api-key", formData,
+                const response = await apiClient.postForm( "/api/tmdb-api-key", formData,
                 {
                     headers:
                     {

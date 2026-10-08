@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../utils/apiClient';
 
 export function LikeButton({ movieId, setCanContinue, likedMovies, setLikedMovies })
 {
@@ -8,7 +8,7 @@ export function LikeButton({ movieId, setCanContinue, likedMovies, setLikedMovie
 
     async function removeFromLikes( )
     {
-        const response = await axios.delete( `/api/movies/like/${movieId}` )
+        const response = await apiClient.delete( `/api/movies/like/${movieId}` )
         .catch( ( error ) =>
         {
             console.log( error.response.data.error );
@@ -33,7 +33,7 @@ export function LikeButton({ movieId, setCanContinue, likedMovies, setLikedMovie
 
     async function addToLikes( )
     {
-        const response = await axios.post( `/api/movies/like/${movieId}` )
+        const response = await apiClient.post( `/api/movies/like/${movieId}` )
         .catch( ( error ) =>
         {
             console.log( error.response.data.error );

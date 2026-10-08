@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import { apiClient } from '../utils/apiClient';
 import { useParams } from 'react-router';
 import { BasicHeader } from '../components/BasicHeader';
 import { useEffect } from 'react';
@@ -22,7 +22,7 @@ export function MoviePage({ user, likedMovies, setLikedMovies, setUser })
     {
         async function fetchMovieData( )
         {
-            const response = await axios.get( `/api/movies/${movieId}` )
+            const response = await apiClient.get( `/api/movies/${movieId}` )
             .catch( ( error ) =>
             {
                 if ( error.response.status === 500 )

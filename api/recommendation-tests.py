@@ -20,7 +20,7 @@ from app.utils import ensure_test_dataset
 from config import Config
 from pathlib import Path
 
-TEST_DATASET_LOCATION = "api/app/test_temp/"
+TEST_DATASET_LOCATION = "app/test_temp/"
 
 DATASETS = {
     "small": {
@@ -47,15 +47,15 @@ COLLAB_TEST_KWARGS = {
 
 class TestConfig(Config):
     Testing = True
-    SQLALCHEMY_DATABASE_URI = "sqlite://"
-    DATASETS_BASE = "api/app/test_datasets"
-    MOVIES_PATH = "api/app/test_datasets/movies.csv"
-    RATINGS_PATH = "api/app/test_datasets/ratings.csv"
-    LINKS_PATH = "api/app/test_datasets/links.csv"
-    TAGS_PATH = "api/app/test_datasets/tags.csv"
-    EXTRACTED_YEAR_PATH = "api/app/test_datasets/extracted_year.csv"
+    SQLALCHEMY_DATABASE_URI = "sqlite:////app/data/db/app.db"
+    DATASETS_BASE = "app/test_datasets"
+    MOVIES_PATH = "app/test_datasets/movies.csv"
+    RATINGS_PATH = "app/test_datasets/ratings.csv"
+    LINKS_PATH = "app/test_datasets/links.csv"
+    TAGS_PATH = "app/test_datasets/tags.csv"
+    EXTRACTED_YEAR_PATH = "app/test_datasets/extracted_year.csv"
     USE_SOCKETIO = False
-    RECOMMENDER_MODEL_PATH = "api/app/test_temp/test_collab_model.joblib"
+    RECOMMENDER_MODEL_PATH = "app/test_temp/test_collab_model.joblib"
     PERSIST_COLLAB_MODEL = False
     AUTO_TRAIN_IF_MISSING = True
     SAVE_MODEL_AFTER_TRAIN = False
